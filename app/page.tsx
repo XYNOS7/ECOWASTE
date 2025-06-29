@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { HomeScreen } from "@/components/screens/home-screen"
@@ -18,7 +18,7 @@ import { database } from "@/lib/database"
 
 export type Screen = "home" | "report-waste" | "map" | "leaderboard" | "rewards" | "settings"
 
-export default function EcoTrackApp() {
+function EcoTrackAppContent() {
   const { user, profile, loading, refreshProfile } = useAuth()
   const [currentScreen, setCurrentScreen] = useState<Screen>("home")
   const [showAchievement, setShowAchievement] = useState(false)
@@ -159,5 +159,13 @@ export default function EcoTrackApp() {
         }
       />
     </div>
+  )
+}
+
+export default function EcoTrackApp() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <EcoTrackAppContent />
+    </Suspense>
   )
 }
