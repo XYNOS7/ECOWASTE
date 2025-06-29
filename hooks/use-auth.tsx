@@ -112,14 +112,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = session?.user ?? null
       setUser(currentUser)
 
-      if (currentUser) {
-        const profileData = await createProfileIfNeeded(currentUser)
-        setProfile(profileData)
-      } else {
-        setProfile(null)
-      }
-
-      setLoading(false)
+     if (currentUser) {
+  try {
+    const profileData = await createProfileIfNeeded(currentUser)
+    setProfile(profileData)
+  } catch (err) {
+    console.error("Error loading profile:", err)
+  }
+}
+setLoading(false)
     })
 
     return () => subscription.unsubscribe()
