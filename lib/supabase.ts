@@ -1,0 +1,133 @@
+import { createClient } from "@supabase/supabase-js"
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://example.supabase.co"
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "public-anon-key"
+
+/**
+ * In the v0 preview (Next.js) environment, NEXT_PUBLIC_* env vars
+ * are not injected.  We fall back to dummy credentials so the app
+ * doesn't crash while you preview it.  Replace these values (or add
+ * real env vars) before deploying.
+ */
+if (supabaseUrl === "https://example.supabase.co" || supabaseAnonKey === "public-anon-key") {
+  // eslint-disable-next-line no-console
+  console.warn(
+    "[EcoTrack] Supabase env variables are missing. " +
+      "Using placeholder values for local preview.\n" +
+      "Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY " +
+      "in your environment before deploying.",
+  )
+}
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+  },
+  db: {
+    schema: "public",
+  },
+  global: {
+    headers: {
+      "x-my-custom-header": "ecotrack-app",
+    },
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
+})
+
+// Test database connection
+export async function testConnection() {
+  try {
+    const { data, error } = await supabase.from("profiles").select("count").limit(1)
+    return { connected: !error, error }
+  } catch (err) {
+    return { connected: false, error: err }
+  }
+}
+
+// Types
+export interface Profile {
+  id: string
+  username: string
+  email: string
+  full_name: string
+  avatar_url?: string
+  eco_coins: number
+  waste_collected: number
+  streak: number
+  level: number
+  total_reports: number
+  created_at: string
+  updated_at: string
+}
+
+export interface WasteReport {
+  id: string
+  user_id: string
+  title: string
+  description?: string
+  category: "dry-waste" | "e-waste" | "reusable" | "hazardous"
+  image_url?: string
+  location_lat?: number
+  location_lng?: number
+  location_address?: string
+  status: "pending" | "in-progress" | "collected" | "rejected"
+  ai_detected_category?: string
+  coins_earned: number
+  created_at: string
+  updated_at: string
+}
+
+export interface DirtyAreaReport {
+  id: string
+  user_id: string
+  title: string
+  description?: string
+  image_url?: string
+  location_lat?: number
+  location_lng?: number
+  location_address?: string
+  status: "reported" | "in-progress" | "cleaned" | "rejected"
+  coins_earned: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Reward {
+  id: string
+  title: string
+  description: string
+  cost: number
+  category: string
+  image_url?: string
+  is_available: boolean
+  stock_quantity: number
+  created_at: string
+  updated_at: string
+}
+
+export interface Achievement {
+  id: string
+  title: string
+  description: string
+  icon: string
+  condition_type: "reports_count" | "streak_days" | "coins_earned" | "waste_collected"
+  condition_value: number
+  coins_reward: number
+  created_at: string
+}
+
+export interface ActivityLog {
+  id: string
+  user_id: string
+  activity_type: string
+  title: string
+  description?: string
+  coins_earned: number
+  created_at: string
+}
