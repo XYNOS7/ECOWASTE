@@ -165,6 +165,9 @@ importers:
         specifier: ^3.24.1
         version: 3.24.1
     devDependencies:
+      '@netlify/next':
+        specifier: ^1.4.9
+        version: 1.4.9(next@15.2.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0))
       '@types/node':
         specifier: ^22
         version: 22.0.0
@@ -349,6 +352,12 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.25':
     resolution: {integrity: sha512-vNk6aEwybGtawWmy/PzwnGDOjCkLWSD2wqvjGGAgOAwCGWySYXfYoxt00IJkTF+8Lb57DwOb3Aa0o9CApepiYQ==}
+
+  '@netlify/next@1.4.9':
+    resolution: {integrity: sha512-lrbY+CEhS9x0jV7oXVYi/rqxZ6ht5KeLGNZsgIPI34kpDaBuD/EfsyKa28BWeSrFalxRZmkMxQYRSTa82v3roQ==}
+    engines: {node: '>=12.0.0'}
+    peerDependencies:
+      next: '>=12.2.0'
 
   '@next/env@15.2.4':
     resolution: {integrity: sha512-+SFtMgoiYP3WoSswuNmxJOCwi06TdWE733D+WPjpXIe4LXGULwEaofiiAy6kbS0+XjM5xF5n3lKuBwN2SnqD9g==}
@@ -2102,6 +2111,10 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.0
+
+  '@netlify/next@1.4.9(next@15.2.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0))':
+    dependencies:
+      next: 15.2.4(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
 
   '@next/env@15.2.4': {}
 
