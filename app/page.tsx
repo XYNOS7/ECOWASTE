@@ -85,7 +85,6 @@ function EcoTrackAppContent() {
           if (newLevel > profile.level) {
             await database.profiles.update(user.id, { level: newLevel })
           }
-          }
         }
 
         toast({
