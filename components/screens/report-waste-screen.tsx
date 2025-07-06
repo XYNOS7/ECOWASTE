@@ -56,10 +56,15 @@ export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) 
           )
           const data = await response.json()
           
+          // Format full address with more details
+          const fullAddress = data.display_name || 
+            `${data.locality || ''} ${data.principalSubdivision || ''} ${data.countryName || ''}`.trim() ||
+            `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+          
           setLocation({
             lat: latitude,
             lng: longitude,
-            address: data.display_name || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+            address: fullAddress
           })
         } catch (error) {
           console.error("Error getting address:", error)
