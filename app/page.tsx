@@ -58,26 +58,32 @@ function EcoTrackAppContent() {
         })
       }
 
-      const coinsEarned = type === "waste" ? 15 : 10
-
-      // Update user's profile with new coins and report count
       if (result.data) {
-        await database.profiles.update(user.id, {
-          eco_coins: profile.eco_coins + coinsEarned,
-          total_reports: profile.total_reports + 1,
-          waste_collected: profile.waste_collected + (type === "waste" ? 5 : 0),
+        // Refresh the profile to get updated coins and report count from database triggers
+        await refreshProfile()
+
+        // Determine coins earned based on type and category
+        let coinsEarned = 10 // Default for dirty area reports
+        if (type === "waste") {
+          switch (data.category) {
+            case 'e-waste':
+              coinsEarned = 20
+              break
+            case 'hazardous':
+              coinsEarned = 25
+              break
+            default:
+              coinsEarned = 15
+          }
+        }
+
+        toast({
+          title: "Report Submitted! 🎉",
+          description: `You earned ${coinsEarned} EcoCoins for helping keep our environment clean!`,
         })
 
-        // Refresh the profile to show updated data
-        await refreshProfile()
+        setCurrentScreen("home")
       }
-
-      toast({
-        title: "Report Submitted! 🎉",
-        description: `You earned ${coinsEarned} EcoCoins!`,
-      })
-
-      setCurrentScreen("home")
     } catch (error) {
       console.error("Error submitting report:", error)
       toast({
@@ -162,6 +168,7 @@ function EcoTrackAppContent() {
       />
     </div>
   )
+
 }
 
 export default function EcoTrackApp() {
@@ -170,4 +177,5 @@ export default function EcoTrackApp() {
       <EcoTrackAppContent />
     </Suspense>
   )
+
 }

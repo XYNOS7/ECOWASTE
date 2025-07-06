@@ -9,6 +9,7 @@ import { Coins, Leaf, Flame, TrendingUp, Camera, MapPin, Lightbulb, Trophy } fro
 import { database } from "@/lib/database"
 import type { Screen } from "@/app/page"
 import type { Profile, ActivityLog } from "@/lib/supabase"
+import { Activity } from "lucide-react"
 
 interface HomeScreenProps {
   profile: Profile
@@ -23,6 +24,7 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
     totalCoins: 0,
   })
   const [loading, setLoading] = useState(true)
+  const [userReports, setUserReports] = useState<any[]>([])
 
   const levelProgress = ((profile.total_reports % 10) / 10) * 100
 
@@ -73,6 +75,11 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
             totalCoins: leaderboard.reduce((sum, user) => sum + user.eco_coins, 0),
           })
         }
+
+        // Fetch user reports
+        const { data: reports } = await database.reports.getByUserId(profile.id, 5)
+        setUserReports(reports || [])
+
       } catch (error) {
         console.error("Error fetching home screen data:", error)
       } finally {
@@ -222,55 +229,77 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
+        transition={{ duration: 0.5, delay: 0.25 }}
       >
         <Card>
           <CardHeader>
-            <CardTitle>Your Recent Activity</CardTitle>
+            <CardTitle className="text-lg">Your Recent Reports</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             {loading ? (
               <div className="space-y-3">
                 {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-start gap-4 p-3 rounded-lg bg-muted/30 animate-pulse">
-                    <div className="w-10 h-10 bg-muted rounded-full" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-muted rounded w-3/4" />
-                      <div className="h-3 bg-muted rounded w-1/2" />
-                    </div>
+                  <div key={i} className="animate-pulse">
+                    <div className="h-16 bg-muted rounded-lg"></div>
                   </div>
                 ))}
               </div>
-            ) : activityLogs.length > 0 ? (
-              activityLogs.map((log, index) => (
-                <motion.div
-                  key={log.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="flex items-start gap-4 p-3 rounded-lg bg-muted/30"
-                >
-                  <div className="bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-400 rounded-full w-10 h-10 flex items-center justify-center">
-                    {log.activity_type === "achievement" ? "🏆" : log.activity_type === "reward_redeemed" ? "🎁" : "✓"}
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium">{log.title}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {new Date(log.created_at).toLocaleDateString()} •
-                      {log.coins_earned > 0
-                        ? ` +${log.coins_earned} EcoCoins`
-                        : log.coins_earned < 0
-                          ? ` ${log.coins_earned} EcoCoins`
-                          : ""}
-                    </p>
-                  </div>
-                </motion.div>
-              ))
+            ) : userReports.length > 0 ? (
+              <div className="space-y-3">
+                {userReports.slice(0, 5).map((report, index) => (
+                  <motion.div
+                    key={report.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 + index * 0.1 }}
+                    className="flex items-center gap-3 p-3 rounded-lg bg-muted/30"
+                  >
+                    <div className="relative">
+                      {report.image_url ? (
+                        <img
+                          src={report.image_url || "/placeholder.svg"}
+                          alt={report.title}
+                          className="w-12 h-12 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center">
+                          <Camera className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className={`absolute -top-1 -right-1 w-3 h-3 rounded-full ${
+                        report.status === 'collected' || report.status === 'cleaned' ? 'bg-green-500' :
+                        report.status === 'in-progress' ? 'bg-yellow-500' : 'bg-orange-500'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{report.title}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {report.location_address || 'Location not specified'} • {new Date(report.created_at).toLocaleDateString()}
+                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="outline" className="text-xs">
+                          {report.type === 'waste' ? 'Waste' : 'Dirty Area'}
+                        </Badge>
+                        <Badge variant={
+                          report.status === 'collected' || report.status === 'cleaned' ? 'default' : 'outline'
+                        } className="text-xs">
+                          {report.status}
+                        </Badge>
+                      </div>
+                    </div>
+                    {report.coins_earned > 0 && (
+                      <Badge variant="outline" className="text-xs">
+                        +{report.coins_earned}
+                      </Badge>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
             ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <div className="text-4xl mb-4">🌱</div>
-                <p>No recent activity</p>
-                <p className="text-sm">Start by reporting some waste!</p>
+              <div className="text-center py-8">
+                <Activity className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-muted-foreground">No reports yet</p>
+                <p className="text-sm text-muted-foreground mt-1">Start reporting to see your activity here!</p>
               </div>
             )}
           </CardContent>
