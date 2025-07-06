@@ -76,9 +76,20 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
           })
         }
 
-        // Fetch user reports
-        const { data: reports } = await database.reports.getByUserId(profile.id, 5)
-        setUserReports(reports || [])
+        // Fetch user reports (both waste and dirty area reports)
+        const [wasteReportsResult, dirtyAreaReportsResult] = await Promise.all([
+          database.wasteReports.getByUser(profile.id),
+          database.dirtyAreaReports.getByUser(profile.id)
+        ])
+
+        const allReports = [
+          ...(wasteReportsResult.data || []).map(report => ({ ...report, type: 'waste' })),
+          ...(dirtyAreaReportsResult.data || []).map(report => ({ ...report, type: 'dirty' }))
+        ]
+
+        // Sort by creation date and limit to 5 most recent
+        allReports.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        setUserReports(allReports.slice(0, 5))
 
       } catch (error) {
         console.error("Error fetching home screen data:", error)
