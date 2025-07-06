@@ -51,7 +51,11 @@
     "next": "15.2.4",
     "next-themes": "latest",
     "react": "^18.3.1",
+<<<<<<< HEAD
     "react-day-picker": "^9.0.0",
+=======
+    "react-day-picker": "^9.7.0",
+>>>>>>> a199e7b (Checkpoint before assistant change: Update core libraries to resolve issues when submitting reports)
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.1",
     "react-resizable-panels": "^2.1.7",
