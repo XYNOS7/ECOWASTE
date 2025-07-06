@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge"
 import { Camera, MapPin, Brain, ArrowLeft, Upload, Loader2 } from "lucide-react"
 import { database } from "@/lib/database"
 import { useAuth } from "@/hooks/use-auth"
+import { useGeolocation } from "@/hooks/use-geolocation"
 
 interface ReportWasteScreenProps {
   onSubmit: (type: "waste" | "dirty-area", data: any) => void
@@ -20,6 +21,7 @@ interface ReportWasteScreenProps {
 
 export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) {
   const { user } = useAuth()
+  const { latitude, longitude, address, loading: locationLoading, error: locationError, getLocation } = useGeolocation()
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [category, setCategory] = useState("")
@@ -27,6 +29,13 @@ export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) 
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [aiResult, setAiResult] = useState<string | null>(null)
+
+  // Auto-get location when component mounts
+  useEffect(() => {
+    getLocation().catch(() => {
+      // Silently fail, user can manually trigger location later
+    })
+  }, [])
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -76,7 +85,9 @@ export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) 
         imageUrl,
         category,
         description,
-        location: "Current Location",
+        location: address || "Location not available",
+        latitude,
+        longitude,
         aiDetectedCategory: aiResult,
       })
     } catch (error) {
@@ -191,9 +202,34 @@ export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) 
 
             <div>
               <label className="text-sm font-medium mb-2 block">Location</label>
-              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-                <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">Current Location (Auto-detected)</span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <MapPin className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm flex-1">
+                    {address || "Location not detected"}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={getLocation}
+                    disabled={locationLoading}
+                  >
+                    {locationLoading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <MapPin className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                {locationError && (
+                  <p className="text-sm text-destructive">{locationError}</p>
+                )}
+                {latitude && longitude && (
+                  <p className="text-xs text-muted-foreground">
+                    Coordinates: {latitude.toFixed(6)}, {longitude.toFixed(6)}
+                  </p>
+                )}
               </div>
             </div>
 

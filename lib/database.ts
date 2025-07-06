@@ -73,7 +73,11 @@ export const database = {
   wasteReports: {
     async create(report: Omit<WasteReport, "id" | "created_at" | "updated_at" | "coins_earned" | "status">) {
       try {
-        const { data, error } = await supabase.from("waste_reports").insert(report).select().single()
+        const { data, error } = await supabase.from("waste_reports").insert({
+          ...report,
+          status: "pending",
+          coins_earned: 0,
+        }).select().single()
         return { data, error }
       } catch (err) {
         console.error("Database waste report create error:", err)
