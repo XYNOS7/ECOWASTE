@@ -10,12 +10,11 @@ const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "public-ano
  * real env vars) before deploying.
  */
 if (supabaseUrl === "https://example.supabase.co" || supabaseAnonKey === "public-anon-key") {
-  // eslint-disable-next-line no-console
-  console.warn(
-    "[EcoTrack] Supabase env variables are missing. " +
-      "Using placeholder values for local preview.\n" +
-      "Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY " +
-      "in your environment before deploying.",
+  console.error(
+    "[EcoTrack] ❌ CRITICAL: Supabase database not configured! " +
+      "Reports, coins, and map features will not work.\n" +
+      "Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY " +
+      "in your Secrets tab to enable database functionality.",
   )
 }
 

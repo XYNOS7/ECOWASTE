@@ -34,6 +34,17 @@ function EcoTrackAppContent() {
   const handleReportSubmit = async (type: "waste" | "dirty-area", data: any) => {
     if (!user || !profile) return
 
+    // Check database connection
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://example.supabase.co"
+    if (supabaseUrl === "https://example.supabase.co") {
+      toast({
+        title: "Database Not Connected ❌",
+        description: "Please configure Supabase in Secrets tab for reports to work",
+        variant: "destructive",
+      })
+      return
+    }
+
     try {
       let result
       if (type === "waste") {

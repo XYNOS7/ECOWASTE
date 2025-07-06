@@ -5,6 +5,26 @@ export const database = {
   profiles: {
     async get(userId: string): Promise<Profile | null> {
       try {
+        // Check if we have a valid connection
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://example.supabase.co"
+        if (supabaseUrl === "https://example.supabase.co") {
+          console.error("❌ Database not configured - returning mock data")
+          return {
+            id: userId,
+            username: "demo_user",
+            email: "demo@example.com",
+            full_name: "Demo User",
+            avatar_url: null,
+            eco_coins: 0,
+            waste_collected: 0,
+            streak: 0,
+            level: 1,
+            total_reports: 0,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }
+        }
+
         const { data, error } = await supabase.from("profiles").select("*").eq("id", userId).maybeSingle()
 
         if (error) {

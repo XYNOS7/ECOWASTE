@@ -111,12 +111,26 @@ export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) 
     if (!selectedImage) return
 
     setIsAnalyzing(true)
-    // Simulate AI analysis
-    setTimeout(() => {
-      setAiResult("E-Waste (Electronic components detected)")
-      setCategory("e-waste")
+    try {
+      // Simulate AI analysis with realistic results
+      const categories = ['e-waste', 'dry-waste', 'hazardous', 'reusable']
+      const descriptions = [
+        'Electronic components detected',
+        'Plastic waste identified',
+        'Hazardous materials found',
+        'Reusable items detected'
+      ]
+      
+      setTimeout(() => {
+        const randomIndex = Math.floor(Math.random() * categories.length)
+        setAiResult(`${categories[randomIndex]} (${descriptions[randomIndex]})`)
+        setCategory(categories[randomIndex])
+        setIsAnalyzing(false)
+      }, 2000)
+    } catch (error) {
+      console.error("AI analysis error:", error)
       setIsAnalyzing(false)
-    }, 2000)
+    }
   }
 
   const handleSubmit = async () => {
