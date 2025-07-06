@@ -1,0 +1,88 @@
+To implement **Smart Waste Categorization with AI** in your **EcoWaste** project, here are the best AI options depending on your skill, time, and whether you're deploying on web (Vercel) with browser-side inference:
+
+---
+
+### ✅ Recommended AI Option (Browser-Based - No Backend Needed)
+
+#### 🎯 **Google Teachable Machine** + TensorFlow\.js (Best for Vercel)
+
+**Why this?**
+
+* No backend needed — runs in browser
+* You can train a model by uploading images in Teachable Machine UI
+* Export the model and run it using `@tensorflow/tfjs`
+* Works perfectly in Vercel with zero backend
+
+---
+
+#### 🔧 **How it works:**
+
+1. **Train the Model:**
+
+   * Go to [Teachable Machine](https://teachablemachine.withgoogle.com/)
+   * Select **Image Project**
+   * Create classes: `E-waste`, `Dry Waste`, `Reusable`
+   * Upload sample images for each class
+   * Train and **export** the model (for web)
+
+2. **Integrate in Your App:**
+
+   * Install TensorFlow\.js:
+
+     ```bash
+     npm install @tensorflow/tfjs
+     ```
+   * Load model in your frontend (Next.js client component):
+
+     ```ts
+     import * as tf from '@tensorflow/tfjs'
+     import { useEffect, useState } from 'react'
+
+     const useWasteClassifier = () => {
+       const [model, setModel] = useState<tf.GraphModel | null>(null)
+
+       useEffect(() => {
+         tf.loadGraphModel('/model/model.json').then(setModel)
+       }, [])
+
+       const classify = async (imageElement: HTMLImageElement) => {
+         if (!model) return null
+         const prediction = await model.predict(tf.browser.fromPixels(imageElement))
+         return prediction
+       }
+
+       return { classify }
+     }
+     ```
+
+3. **Upload your exported model** to `/public/model` in your Next.js app.
+
+---
+
+### 🔁 Alternatives (If Backend Allowed)
+
+If you want **server-side classification** (not recommended for first version on Vercel):
+
+* Use **Hugging Face Model API** (costly + needs API key)
+* Use **Replicate** for custom image classification
+* Use **Custom TensorFlow Model** with Supabase Edge Functions (advanced)
+
+---
+
+### 💡 Recommendation:
+
+Stick to **Teachable Machine + TensorFlow\.js** for:
+
+* Simplicity
+* Fast AI integration
+* 100% frontend browser-based (no cost)
+* Works well on Vercel
+
+---
+
+If you'd like, I can help you:
+
+* Export a sample Teachable Machine model
+* Write the code to auto-categorize based on image upload
+
+Would you like me to generate a starter AI integration for this?
