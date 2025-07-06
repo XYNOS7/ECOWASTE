@@ -2,14 +2,14 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
-import { Camera, MapPin, Brain, ArrowLeft, Upload, Loader2 } from "lucide-react"
+import { Camera, MapPin, Brain, ArrowLeft, Upload, Loader2, Navigation } from "lucide-react"
 import { database } from "@/lib/database"
 import { useAuth } from "@/hooks/use-auth"
 
@@ -27,6 +27,68 @@ export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) 
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [aiResult, setAiResult] = useState<string | null>(null)
+  const [location, setLocation] = useState<{
+    lat: number
+    lng: number
+    address: string
+  } | null>(null)
+  const [isGettingLocation, setIsGettingLocation] = useState(false)
+  const [locationError, setLocationError] = useState<string | null>(null)
+
+  const getCurrentLocation = async () => {
+    setIsGettingLocation(true)
+    setLocationError(null)
+
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by this browser.")
+      setIsGettingLocation(false)
+      return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude, longitude } = position.coords
+        
+        try {
+          // Reverse geocoding to get readable address
+          const response = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+          )
+          const data = await response.json()
+          
+          setLocation({
+            lat: latitude,
+            lng: longitude,
+            address: data.display_name || `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+          })
+        } catch (error) {
+          console.error("Error getting address:", error)
+          setLocation({
+            lat: latitude,
+            lng: longitude,
+            address: `${latitude.toFixed(6)}, ${longitude.toFixed(6)}`
+          })
+        }
+        
+        setIsGettingLocation(false)
+      },
+      (error) => {
+        console.error("Error getting location:", error)
+        setLocationError("Unable to get your location. Please enable location services.")
+        setIsGettingLocation(false)
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes
+      }
+    )
+  }
+
+  useEffect(() => {
+    // Automatically get location when component mounts
+    getCurrentLocation()
+  }, [])
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -70,13 +132,15 @@ export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) 
         return
       }
 
-      // Submit the report with the uploaded image URL
+      // Submit the report with the uploaded image URL and location
       onSubmit("waste", {
         title: `${category.replace('-', ' ')} waste report`,
         imageUrl,
         category,
         description,
-        location: "Current Location",
+        location: location?.address || "Location not available",
+        locationLat: location?.lat,
+        locationLng: location?.lng,
         aiDetectedCategory: aiResult,
       })
     } catch (error) {
@@ -191,9 +255,29 @@ export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) 
 
             <div>
               <label className="text-sm font-medium mb-2 block">Location</label>
-              <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
-                <MapPin className="w-4 h-4 text-muted-foreground" />
-                <span className="text-sm">Current Location (Auto-detected)</span>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <MapPin className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm flex-1">
+                    {location ? location.address : isGettingLocation ? "Getting location..." : "Location not available"}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={getCurrentLocation}
+                    disabled={isGettingLocation}
+                  >
+                    {isGettingLocation ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Navigation className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                {locationError && (
+                  <p className="text-sm text-red-500">{locationError}</p>
+                )}
               </div>
             </div>
 

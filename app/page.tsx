@@ -44,6 +44,8 @@ function EcoTrackAppContent() {
           category: data.category,
           image_url: data.imageUrl,
           location_address: data.location,
+          location_lat: data.locationLat,
+          location_lng: data.locationLng,
           ai_detected_category: data.aiDetectedCategory,
         })
       } else {
