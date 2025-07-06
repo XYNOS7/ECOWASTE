@@ -77,6 +77,17 @@ function EcoTrackAppContent() {
           }
         }
 
+        // Update user level based on total reports (every 10 reports = +1 level)
+        if (profile) {
+          const newReportCount = profile.total_reports + 1
+          const newLevel = Math.floor(newReportCount / 10) + 1
+          
+          if (newLevel > profile.level) {
+            await database.profiles.update(user.id, { level: newLevel })
+          }
+          }
+        }
+
         toast({
           title: "Report Submitted! 🎉",
           description: `You earned ${coinsEarned} EcoCoins for helping keep our environment clean!`,
