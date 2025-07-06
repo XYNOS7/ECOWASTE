@@ -12,7 +12,6 @@ import { Badge } from "@/components/ui/badge"
 import { Camera, MapPin, Brain, ArrowLeft, Upload, Loader2 } from "lucide-react"
 import { database } from "@/lib/database"
 import { useAuth } from "@/hooks/use-auth"
-import { useWasteClassifier } from "@/hooks/use-waste-classifier"
 
 interface ReportWasteScreenProps {
   onSubmit: (type: "waste" | "dirty-area", data: any) => void
@@ -21,7 +20,6 @@ interface ReportWasteScreenProps {
 
 export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) {
   const { user } = useAuth()
-  const { classifyImage, isLoading: modelLoading, error: modelError } = useWasteClassifier()
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [category, setCategory] = useState("")
@@ -43,50 +41,15 @@ export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) 
   }
 
   const handleAIAnalysis = async () => {
-    if (!selectedImage || !classifyImage) return
+    if (!selectedImage) return
 
     setIsAnalyzing(true)
-    try {
-      // Create an image element for classification
-      const img = new Image()
-      img.crossOrigin = "anonymous"
-      
-      img.onload = async () => {
-        try {
-          const result = await classifyImage(img)
-          
-          if (result) {
-            const confidence = (result.probability * 100).toFixed(1)
-            const displayNames = {
-              'dry-waste': 'Dry Waste',
-              'e-waste': 'E-Waste', 
-              'reusable': 'Reusable Items',
-              'hazardous': 'Hazardous Waste'
-            }
-            
-            setAiResult(`${displayNames[result.className as keyof typeof displayNames]} (${confidence}% confidence)`)
-            setCategory(result.className)
-          } else {
-            setAiResult("Unable to classify - please select category manually")
-          }
-        } catch (error) {
-          console.error('Classification error:', error)
-          setAiResult("Classification failed - please select category manually")
-        }
-        setIsAnalyzing(false)
-      }
-      
-      img.onerror = () => {
-        setAiResult("Image loading failed - please try again")
-        setIsAnalyzing(false)
-      }
-      
-      img.src = selectedImage
-    } catch (error) {
-      console.error('AI Analysis error:', error)
-      setAiResult("Analysis failed - please select category manually")
+    // Simulate AI analysis
+    setTimeout(() => {
+      setAiResult("E-Waste (Electronic components detected)")
+      setCategory("e-waste")
       setIsAnalyzing(false)
-    }
+    }, 2000)
   }
 
   const handleSubmit = async () => {
@@ -168,26 +131,11 @@ export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) 
               <input id="image-upload" type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
 
               {selectedImage && (
-                <Button 
-                  onClick={handleAIAnalysis} 
-                  disabled={isAnalyzing || modelLoading || !!modelError} 
-                  className="w-full" 
-                  variant="secondary"
-                >
-                  {modelLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Loading AI Model...
-                    </>
-                  ) : isAnalyzing ? (
+                <Button onClick={handleAIAnalysis} disabled={isAnalyzing} className="w-full" variant="secondary">
+                  {isAnalyzing ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                       Analyzing with AI...
-                    </>
-                  ) : modelError ? (
-                    <>
-                      <Brain className="w-4 h-4 mr-2" />
-                      AI Unavailable - Select Manually
                     </>
                   ) : (
                     <>
