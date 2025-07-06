@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Camera, MapPin, Brain, ArrowLeft, Upload, Loader2 } from "lucide-react"
+import { database } from "@/lib/database"
+import { useAuth } from "@/hooks/use-auth"
 
 interface ReportWasteScreenProps {
   onSubmit: (type: "waste" | "dirty-area", data: any) => void
@@ -17,15 +19,19 @@ interface ReportWasteScreenProps {
 }
 
 export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) {
+  const { user } = useAuth()
   const [selectedImage, setSelectedImage] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [category, setCategory] = useState("")
   const [description, setDescription] = useState("")
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [aiResult, setAiResult] = useState<string | null>(null)
 
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
+      setSelectedFile(file)
       const reader = new FileReader()
       reader.onload = (e) => {
         setSelectedImage(e.target?.result as string)
@@ -46,13 +52,37 @@ export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) 
     }, 2000)
   }
 
-  const handleSubmit = () => {
-    onSubmit("waste", {
-      image: selectedImage,
-      category,
-      description,
-      location: "Current Location",
-    })
+  const handleSubmit = async () => {
+    if (!user || !selectedFile) return
+
+    setIsUploading(true)
+    try {
+      // Upload image to Supabase storage
+      const { url: imageUrl, error: uploadError } = await database.storage.uploadImage(
+        selectedFile,
+        user.id,
+        "waste-reports"
+      )
+
+      if (uploadError) {
+        console.error("Image upload error:", uploadError)
+        setIsUploading(false)
+        return
+      }
+
+      // Submit the report with the uploaded image URL
+      onSubmit("waste", {
+        title: `${category.replace('-', ' ')} waste report`,
+        imageUrl,
+        category,
+        description,
+        location: "Current Location",
+        aiDetectedCategory: aiResult,
+      })
+    } catch (error) {
+      console.error("Error uploading image:", error)
+    }
+    setIsUploading(false)
   }
 
   return (
@@ -181,8 +211,15 @@ export function ReportWasteScreen({ onSubmit, onBack }: ReportWasteScreenProps) 
       </motion.div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-        <Button onClick={handleSubmit} disabled={!selectedImage || !category} className="w-full" size="lg">
-          Submit Report
+        <Button onClick={handleSubmit} disabled={!selectedImage || !category || isUploading} className="w-full" size="lg">
+          {isUploading ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            "Submit Report"
+          )}
         </Button>
       </motion.div>
     </div>
