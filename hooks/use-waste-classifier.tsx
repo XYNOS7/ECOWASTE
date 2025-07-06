@@ -10,7 +10,7 @@ interface ClassificationResult {
 }
 
 export const useWasteClassifier = () => {
-  const [model, setModel] = useState<tf.GraphModel | null>(null)
+  const [model, setModel] = useState<tf.LayersModel | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -22,7 +22,7 @@ export const useWasteClassifier = () => {
         
         // Load your trained model from Teachable Machine
         const modelUrl = 'https://teachablemachine.withgoogle.com/models/7WCBx_TNQ/'
-        const loadedModel = await tf.loadGraphModel(modelUrl + 'model.json')
+        const loadedModel = await tf.loadLayersModel(modelUrl + 'model.json')
         
         setModel(loadedModel)
       } catch (err) {
@@ -43,7 +43,7 @@ export const useWasteClassifier = () => {
     }
 
     try {
-      // Preprocess the image
+      // Preprocess the image for Teachable Machine
       const tensor = tf.browser.fromPixels(imageElement)
         .resizeNearestNeighbor([224, 224]) // Teachable Machine uses 224x224
         .toFloat()
@@ -51,7 +51,7 @@ export const useWasteClassifier = () => {
         .expandDims(0)
 
       // Make prediction
-      const predictions = await model.predict(tensor) as tf.Tensor
+      const predictions = model.predict(tensor) as tf.Tensor
       const probabilities = await predictions.data()
       
       // Clean up tensors
