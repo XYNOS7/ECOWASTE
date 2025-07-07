@@ -1,6 +1,8 @@
 
-import { HomePage } from "@/components/screens/home-screen";
+"use client"
 
-export default function Page() {
-  return <HomePage />;
+import { EcoTrackApp } from "../page"
+
+export default function LocalePage() {
+  return <EcoTrackApp />
 }
