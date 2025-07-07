@@ -1,0 +1,79 @@
+
+{
+  "navigation": {
+    "home": "হোম",
+    "report": "বর্জ্য রিপোর্ট",
+    "map": "মানচিত্র",
+    "rewards": "পুরস্কার",
+    "leaderboard": "লিডারবোর্ড",
+    "settings": "সেটিংস"
+  },
+  "auth": {
+    "signIn": "সাইন ইন",
+    "signUp": "সাইন আপ",
+    "email": "ইমেইল",
+    "password": "পাসওয়ার্ড",
+    "confirmPassword": "পাসওয়ার্ড নিশ্চিত করুন",
+    "forgotPassword": "পাসওয়ার্ড ভুলে গেছেন?",
+    "createAccount": "অ্যাকাউন্ট তৈরি করুন",
+    "alreadyHaveAccount": "ইতিমধ্যে একটি অ্যাকাউন্ট আছে?",
+    "dontHaveAccount": "কোন অ্যাকাউন্ট নেই?"
+  },
+  "home": {
+    "welcome": "ইকোট্র্যাকে স্বাগতম",
+    "subtitle": "স্মার্ট বর্জ্য ব্যবস্থাপনা",
+    "description": "এআই-চালিত ট্র্যাকিং দিয়ে বর্জ্যকে পুরস্কারে রূপান্তরিত করুন",
+    "getStarted": "শুরু করুন",
+    "totalReports": "মোট রিপোর্ট",
+    "points": "পয়েন্ট",
+    "level": "স্তর"
+  },
+  "waste": {
+    "reportWaste": "বর্জ্য রিপোর্ট করুন",
+    "selectType": "বর্জ্যের ধরন নির্বাচন করুন",
+    "plastic": "প্লাস্টিক",
+    "paper": "কাগজ",
+    "glass": "কাচ",
+    "metal": "ধাতু",
+    "organic": "জৈব",
+    "electronic": "ইলেকট্রনিক",
+    "location": "অবস্থান",
+    "description": "বিবরণ",
+    "submit": "রিপোর্ট জমা দিন",
+    "takePhoto": "ছবি তুলুন"
+  },
+  "rewards": {
+    "yourRewards": "আপনার পুরস্কার",
+    "availableRewards": "উপলব্ধ পুরস্কার",
+    "redeem": "রিডিম করুন",
+    "points": "পয়েন্ট",
+    "redeemed": "রিডিম করা হয়েছে"
+  },
+  "leaderboard": {
+    "title": "লিডারবোর্ড",
+    "rank": "র্যাঙ্ক",
+    "user": "ব্যবহারকারী",
+    "points": "পয়েন্ট",
+    "reports": "রিপোর্ট"
+  },
+  "settings": {
+    "title": "সেটিংস",
+    "profile": "প্রোফাইল",
+    "language": "ভাষা",
+    "notifications": "বিজ্ঞপ্তি",
+    "privacy": "গোপনীয়তা",
+    "about": "সম্পর্কে",
+    "logout": "লগআউট",
+    "selectLanguage": "ভাষা নির্বাচন করুন"
+  },
+  "common": {
+    "loading": "লোড হচ্ছে...",
+    "error": "ত্রুটি",
+    "success": "সফল",
+    "cancel": "বাতিল",
+    "save": "সংরক্ষণ",
+    "delete": "মুছুন",
+    "edit": "সম্পাদনা",
+    "close": "বন্ধ"
+  }
+}

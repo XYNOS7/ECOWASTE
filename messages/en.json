@@ -1,0 +1,79 @@
+
+{
+  "navigation": {
+    "home": "Home",
+    "report": "Report Waste",
+    "map": "Map",
+    "rewards": "Rewards",
+    "leaderboard": "Leaderboard",
+    "settings": "Settings"
+  },
+  "auth": {
+    "signIn": "Sign In",
+    "signUp": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "createAccount": "Create Account",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?"
+  },
+  "home": {
+    "welcome": "Welcome to EcoTrack",
+    "subtitle": "Smart Waste Management",
+    "description": "Transform waste into rewards with AI-powered tracking",
+    "getStarted": "Get Started",
+    "totalReports": "Total Reports",
+    "points": "Points",
+    "level": "Level"
+  },
+  "waste": {
+    "reportWaste": "Report Waste",
+    "selectType": "Select Waste Type",
+    "plastic": "Plastic",
+    "paper": "Paper",
+    "glass": "Glass",
+    "metal": "Metal",
+    "organic": "Organic",
+    "electronic": "Electronic",
+    "location": "Location",
+    "description": "Description",
+    "submit": "Submit Report",
+    "takePhoto": "Take Photo"
+  },
+  "rewards": {
+    "yourRewards": "Your Rewards",
+    "availableRewards": "Available Rewards",
+    "redeem": "Redeem",
+    "points": "points",
+    "redeemed": "Redeemed"
+  },
+  "leaderboard": {
+    "title": "Leaderboard",
+    "rank": "Rank",
+    "user": "User",
+    "points": "Points",
+    "reports": "Reports"
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "language": "Language",
+    "notifications": "Notifications",
+    "privacy": "Privacy",
+    "about": "About",
+    "logout": "Logout",
+    "selectLanguage": "Select Language"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close"
+  }
+}

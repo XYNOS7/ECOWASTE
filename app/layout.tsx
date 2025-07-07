@@ -1,6 +1,9 @@
+
 import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
 import "../styles/globals.css";
 import { ThemeProvider } from "@/components/theme-provider"
 import { AuthProvider } from "@/hooks/use-auth"
@@ -14,23 +17,29 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "EcoTrack - Smart Waste Management",
   description: "Transform waste into rewards with AI-powered tracking",
-    generator: 'v0.dev'
+  generator: 'v0.dev'
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
+  params: { locale }
 }: {
   children: React.ReactNode
+  params: { locale: string }
 }) {
+  const messages = await getMessages();
+
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange={false}>
-          <AuthProvider>
-            {children}
-            <Toaster />
-          </AuthProvider>
-        </ThemeProvider>
+        <NextIntlClientProvider messages={messages}>
+          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange={false}>
+            <AuthProvider>
+              {children}
+              <Toaster />
+            </AuthProvider>
+          </ThemeProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   )

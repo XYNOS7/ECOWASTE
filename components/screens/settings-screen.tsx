@@ -36,13 +36,8 @@ export function SettingsScreen() {
     email: profile?.email || "",
   })
 
-  const languages = [
-    { code: "en", name: "English", flag: "🇺🇸" },
-    { code: "hi", name: "हिंदी", flag: "🇮🇳" },
-    { code: "bn", name: "বাংলা", flag: "🇧🇩" },
-    { code: "es", name: "Español", flag: "🇪🇸" },
-    { code: "fr", name: "Français", flag: "🇫🇷" },
-  ]
+  import { LanguageSwitcher } from "@/components/language-switcher"
+import { useTranslations } from 'next-intl'
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
