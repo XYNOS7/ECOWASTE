@@ -1,0 +1,70 @@
+Console Error
+
+
+[EcoTrack] ❌ CRITICAL: Supabase database not configured! Reports, coins, and map features will not work.
+Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in your Secrets tab to enable database functionality.
+
+lib/supabase.ts (13:11) @ eval
+
+
+  11 |  */
+  12 | if (supabaseUrl === "https://example.supabase.co" || supabaseAnonKey === "public-anon-key") {
+> 13 |   console.error(
+     |           ^
+  14 |     "[EcoTrack] ❌ CRITICAL: Supabase database not configured! " +
+  15 |       "Reports, coins, and map features will not work.\n" +
+  16 |       "Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY " +
+Call Stack
+28
+
+Show 3 ignore-listed frame(s)
+eval
+lib/supabase.ts (13:11)
+./lib/supabase.ts
+.next/static/chunks/app/[locale]/page.js (293:1)
+options.factory
+.next/static/chunks/webpack.js (712:31)
+__webpack_require__
+.next/static/chunks/webpack.js (37:33)
+fn
+.next/static/chunks/webpack.js (369:21)
+eval
+./lib/auth.ts
+./lib/auth.ts
+.next/static/chunks/app/[locale]/page.js (271:1)
+options.factory
+.next/static/chunks/webpack.js (712:31)
+__webpack_require__
+.next/static/chunks/webpack.js (37:33)
+fn
+.next/static/chunks/webpack.js (369:21)
+eval
+./hooks/use-auth.tsx
+./hooks/use-auth.tsx
+.next/static/chunks/app/[locale]/page.js (249:1)
+options.factory
+.next/static/chunks/webpack.js (712:31)
+__webpack_require__
+.next/static/chunks/webpack.js (37:33)
+fn
+.next/static/chunks/webpack.js (369:21)
+eval
+./components/screens/auth-screen.tsx
+./components/screens/auth-screen.tsx
+.next/static/chunks/app/[locale]/page.js (62:1)
+options.factory
+.next/static/chunks/webpack.js (712:31)
+__webpack_require__
+.next/static/chunks/webpack.js (37:33)
+fn
+.next/static/chunks/webpack.js (369:21)
+eval
+./app/[locale]/page.tsx
+./app/[locale]/page.tsx
+.next/static/chunks/app/[locale]/page.js (18:1)
+options.factory
+.next/static/chunks/webpack.js (712:31)
+__webpack_require__
+.next/static/chunks/webpack.js (37:33)
+fn
+.next/static/chunks/webpack.js (369:21)
