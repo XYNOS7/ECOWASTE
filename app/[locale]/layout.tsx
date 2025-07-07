@@ -1,10 +1,8 @@
 
+
 import type React from "react"
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
-import { notFound } from 'next/navigation';
-
-const locales = ['en', 'bn', 'hi'];
 
 export default async function LocaleLayout({
   children,
@@ -15,9 +13,7 @@ export default async function LocaleLayout({
 }) {
   const { locale } = await params;
   
-  // Validate that the incoming `locale` parameter is valid
-  if (!locales.includes(locale as any)) notFound();
-
+  // Locale validation is handled by middleware.ts
   // Providing all messages to the client
   // side is the easiest way to get started
   const messages = await getMessages();
@@ -28,3 +24,4 @@ export default async function LocaleLayout({
     </NextIntlClientProvider>
   );
 }
+

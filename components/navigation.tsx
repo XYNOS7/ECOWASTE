@@ -1,12 +1,12 @@
 
-"use client"
+'use client'
 
-import { motion } from "framer-motion"
+import type React from "react"
+import { useTheme } from "next-themes"
+import { cn } from "@/lib/utils"
+import type { Screen } from "@/app/[locale]/page"
 import { useTranslations } from 'next-intl'
 import { Home, MapPin, Gift, Trophy, Settings, FileText } from "lucide-react"
-import { cn } from "@/lib/utils"
-
-export type Screen = "home" | "report" | "map" | "rewards" | "leaderboard" | "settings"
 
 interface NavigationProps {
   currentScreen: Screen
@@ -14,6 +14,7 @@ interface NavigationProps {
 }
 
 export function Navigation({ currentScreen, onNavigate }: NavigationProps) {
+  const { theme } = useTheme()
   const t = useTranslations('navigation')
 
   const navItems = [
@@ -26,24 +27,25 @@ export function Navigation({ currentScreen, onNavigate }: NavigationProps) {
   ]
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-2">
-      <div className="flex justify-around items-center max-w-md mx-auto">
+    <nav className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 z-50">
+      <div className="flex justify-around items-center py-2 px-4 max-w-lg mx-auto">
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = currentScreen === item.id
-
           return (
             <button
               key={item.id}
               onClick={() => onNavigate(item.id)}
-              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
+              className={cn(
+                "flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 min-w-[60px]",
                 isActive
                   ? "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20"
-                  : "text-gray-600 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400"
-              }`}
+                  : "text-gray-500 dark:text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/10"
+              )}
+              aria-label={item.label}
             >
-              <Icon className="h-5 w-5" />
-              <span className="text-xs font-medium">{item.label}</span>
+              <Icon className={cn("w-5 h-5 mb-1", isActive && "animate-pulse")} />
+              <span className="text-xs font-medium truncate">{item.label}</span>
             </button>
           )
         })}
