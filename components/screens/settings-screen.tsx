@@ -15,12 +15,15 @@ import { useTheme } from "next-themes"
 import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { database } from "@/lib/database"
+import { LanguageSwitcher } from "@/components/language-switcher"
+import { useTranslations } from 'next-intl'
 import { Moon, Sun, Globe, Bell, Shield, HelpCircle, LogOut, Camera, Save, Loader2, Edit3 } from "lucide-react"
 
 export function SettingsScreen() {
   const { theme, setTheme } = useTheme()
   const { profile, signOut, refreshProfile } = useAuth()
   const { toast } = useToast()
+  const t = useTranslations('settings')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [notifications, setNotifications] = useState(true)
@@ -35,9 +38,6 @@ export function SettingsScreen() {
     full_name: profile?.full_name || "",
     email: profile?.email || "",
   })
-
-  import { LanguageSwitcher } from "@/components/language-switcher"
-import { useTranslations } from 'next-intl'
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -176,6 +176,12 @@ import { useTranslations } from 'next-intl'
       description: `Switched to ${isDark ? "dark" : "light"} theme`,
     })
   }
+
+  const languages = [
+    { code: "en", name: "English", flag: "🇺🇸" },
+    { code: "bn", name: "বাংলা", flag: "🇧🇩" },
+    { code: "hi", name: "हिन्दी", flag: "🇮🇳" },
+  ]
 
   const handleLanguageChange = (langCode: string) => {
     setLanguage(langCode)
