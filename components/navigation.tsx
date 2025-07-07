@@ -1,14 +1,10 @@
+
 "use client"
 
 import { motion } from "framer-motion"
-import { Home, MapPin, Gift, Settings, Camera } from "lucide-react"
-import { cn } from "@/lib/utils"
-import type { Screen } from "@/app/page"
-
-'use client'
-
 import { useTranslations } from 'next-intl'
 import { Home, MapPin, Gift, Trophy, Settings, FileText } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export type Screen = "home" | "report" | "map" | "rewards" | "leaderboard" | "settings"
 
