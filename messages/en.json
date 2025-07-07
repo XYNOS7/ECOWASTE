@@ -1,0 +1,33 @@
+
+{
+  "common": {
+    "welcome": "Welcome",
+    "signin": "Sign In",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "username": "Username",
+    "fullName": "Full Name",
+    "loading": "Loading...",
+    "createAccount": "Create Account",
+    "alreadyHaveAccount": "Already have an account? Sign in",
+    "dontHaveAccount": "Don't have an account? Sign up"
+  },
+  "app": {
+    "title": "EcoTrack - Smart Waste Management",
+    "description": "Transform waste into rewards with AI-powered tracking",
+    "welcomeBack": "Welcome back!",
+    "createYourAccount": "Create your account",
+    "accountCreated": "Account created!",
+    "checkEmail": "Please check your email to verify your account.",
+    "signedInSuccessfully": "You've been signed in successfully.",
+    "error": "Error",
+    "somethingWentWrong": "Something went wrong. Please try again."
+  },
+  "placeholders": {
+    "enterEmail": "Enter your email",
+    "enterPassword": "Enter your password",
+    "enterFullName": "Enter your full name",
+    "chooseUsername": "Choose a username"
+  }
+}

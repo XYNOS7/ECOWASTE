@@ -1,0 +1,33 @@
+
+{
+  "common": {
+    "welcome": "स्वागत",
+    "signin": "साइन इन",
+    "signup": "साइन अप",
+    "email": "ईमेल",
+    "password": "पासवर्ड",
+    "username": "उपयोगकर्ता नाम",
+    "fullName": "पूरा नाम",
+    "loading": "लोड हो रहा है...",
+    "createAccount": "खाता बनाएं",
+    "alreadyHaveAccount": "पहले से खाता है? साइन इन करें",
+    "dontHaveAccount": "खाता नहीं है? साइन अप करें"
+  },
+  "app": {
+    "title": "इकोट्रैक - स्मार्ट वेस्ट मैनेजमेंट",
+    "description": "AI-संचालित ट्रैकिंग के साथ कचरे को पुरस्कारों में बदलें",
+    "welcomeBack": "वापस स्वागत है!",
+    "createYourAccount": "अपना खाता बनाएं",
+    "accountCreated": "खाता बनाया गया!",
+    "checkEmail": "अपना खाता सत्यापित करने के लिए कृपया अपना ईमेल देखें।",
+    "signedInSuccessfully": "आप सफलतापूर्वक साइन इन हो गए हैं।",
+    "error": "त्रुटि",
+    "somethingWentWrong": "कुछ गलत हुआ। कृपया पुनः प्रयास करें।"
+  },
+  "placeholders": {
+    "enterEmail": "अपना ईमेल दर्ज करें",
+    "enterPassword": "अपना पासवर्ड दर्ज करें",
+    "enterFullName": "अपना पूरा नाम दर्ज करें",
+    "chooseUsername": "एक उपयोगकर्ता नाम चुनें"
+  }
+}

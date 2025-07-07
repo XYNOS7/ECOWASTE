@@ -4,6 +4,10 @@ import { motion } from "framer-motion"
 import { Home, MapPin, Gift, Settings, Camera } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Screen } from "@/app/page"
+import { Button } from "@/components/ui/button"
+import { useAuth } from "@/hooks/use-auth"
+import { ModeToggle } from "@/components/ui/mode-toggle"
+import { LanguageSwitcher } from "@/components/language-switcher"
 
 interface NavigationProps {
   currentScreen: Screen
@@ -69,6 +73,7 @@ export function Navigation({ currentScreen, onNavigate }: NavigationProps) {
               </motion.button>
             )
           })}
+          <LanguageSwitcher />
         </div>
       </div>
     </motion.nav>
