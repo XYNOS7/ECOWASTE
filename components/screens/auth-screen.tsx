@@ -4,7 +4,6 @@ import type React from "react"
 
 import { useState } from "react"
 import { motion } from "framer-motion"
-import { useTranslations } from 'next-intl'
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -22,7 +21,6 @@ export function AuthScreen() {
   const [loading, setLoading] = useState(false)
   const { signIn, signUp } = useAuth()
   const { toast } = useToast()
-  const t = useTranslations()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -41,15 +39,15 @@ export function AuthScreen() {
       }
 
       toast({
-        title: isSignUp ? t('app.accountCreated') : t('app.welcomeBack'),
+        title: isSignUp ? "Account created!" : "Welcome back!",
         description: isSignUp
-          ? t('app.checkEmail')
-          : t('app.signedInSuccessfully'),
+          ? "Please check your email to verify your account."
+          : "You've been signed in successfully.",
       })
     } catch (error: any) {
       toast({
-        title: t('app.error'),
-        description: error.message || t('app.somethingWentWrong'),
+        title: "Error",
+        description: error.message || "Something went wrong. Please try again.",
         variant: "destructive",
       })
     } finally {
@@ -79,20 +77,20 @@ export function AuthScreen() {
               <span className="text-green-600">Eco</span>
               <span className="text-green-500">Track</span>
             </CardTitle>
-            <p className="text-muted-foreground">{isSignUp ? t('app.createYourAccount') : t('app.welcomeBack')}</p>
+            <p className="text-muted-foreground">{isSignUp ? "Create your account" : "Welcome back"}</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {isSignUp && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="fullName">{t('common.fullName')}</Label>
+                    <Label htmlFor="fullName">Full Name</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="fullName"
                         type="text"
-                        placeholder={t('placeholders.enterFullName')}
+                        placeholder="Enter your full name"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         className="pl-10"
@@ -101,13 +99,13 @@ export function AuthScreen() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="username">{t('common.username')}</Label>
+                    <Label htmlFor="username">Username</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="username"
                         type="text"
-                        placeholder={t('placeholders.chooseUsername')}
+                        placeholder="Choose a username"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         className="pl-10"
@@ -118,13 +116,13 @@ export function AuthScreen() {
                 </>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">{t('common.email')}</Label>
+                <Label htmlFor="email">Email</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="email"
                     type="email"
-                    placeholder={t('placeholders.enterEmail')}
+                    placeholder="Enter your email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
@@ -133,13 +131,13 @@ export function AuthScreen() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="password">{t('common.password')}</Label>
+                <Label htmlFor="password">Password</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="password"
                     type="password"
-                    placeholder={t('placeholders.enterPassword')}
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10"
@@ -148,12 +146,12 @@ export function AuthScreen() {
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? t('common.loading') : isSignUp ? t('common.createAccount') : t('common.signin')}
+                {loading ? "Loading..." : isSignUp ? "Create Account" : "Sign In"}
               </Button>
             </form>
             <div className="mt-4 text-center">
               <Button variant="link" onClick={() => setIsSignUp(!isSignUp)} className="text-sm">
-                {isSignUp ? t('common.alreadyHaveAccount') : t('common.dontHaveAccount')}
+                {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
               </Button>
             </div>
           </CardContent>
