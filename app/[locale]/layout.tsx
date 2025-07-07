@@ -1,5 +1,4 @@
 
-
 import type React from "react"
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages } from 'next-intl/server';
@@ -24,4 +23,3 @@ export default async function LocaleLayout({
     </NextIntlClientProvider>
   );
 }
-
