@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Coins, Leaf, Flame, TrendingUp, Camera, MapPin, Lightbulb, Trophy } from "lucide-react"
 import { database } from "@/lib/database"
-import { supabase } from "@/lib/supabase"
 import type { Screen } from "@/app/page"
 import type { Profile, ActivityLog } from "@/lib/supabase"
 import { Activity } from "lucide-react"
@@ -27,8 +26,7 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
   const [loading, setLoading] = useState(true)
   const [userReports, setUserReports] = useState<any[]>([])
 
-  const [actualTotalReports, setActualTotalReports] = useState(profile.total_reports)
-  const levelProgress = ((actualTotalReports % 10) / 10) * 100
+  const levelProgress = ((profile.total_reports % 10) / 10) * 100
 
   const quickActions = [
     {
@@ -93,15 +91,6 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
         allReports.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         setUserReports(allReports.slice(0, 5))
 
-        // Update profile with correct total report count if needed
-        const totalUserReports = (wasteReportsResult.data || []).length + (dirtyAreaReportsResult.data || []).length
-        setActualTotalReports(totalUserReports)
-        
-        if (profile.total_reports !== totalUserReports) {
-          console.log(`📊 Updating user total reports from ${profile.total_reports} to ${totalUserReports}`)
-          await database.profiles.update(profile.id, { total_reports: totalUserReports })
-        }
-
       } catch (error) {
         console.error("Error fetching home screen data:", error)
       } finally {
@@ -110,59 +99,6 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
     }
 
     fetchData()
-
-    // Set up real-time subscriptions for live updates
-    const wasteReportsChannel = supabase
-      .channel('realtime-waste-reports-user')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'waste_reports',
-          filter: `user_id=eq.${profile.id}`
-        },
-        (payload) => {
-          console.log('🔄 User waste reports changed:', payload)
-          fetchData() // Refetch all data when user's reports change
-        }
-      )
-      .subscribe()
-
-    const dirtyAreaReportsChannel = supabase
-      .channel('realtime-dirty-area-reports-user')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'dirty_area_reports',
-          filter: `user_id=eq.${profile.id}`
-        },
-        (payload) => {
-          console.log('🔄 User dirty area reports changed:', payload)
-          fetchData() // Refetch all data when user's reports change
-        }
-      )
-      .subscribe()
-
-    const profilesChannel = supabase
-      .channel('realtime-profile-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'profiles',
-          filter: `id=eq.${profile.id}`
-        },
-        (payload) => {
-          console.log('🔄 User profile updated:', payload)
-          // Force refresh of the page to get updated profile data
-          window.location.reload()
-        }
-      )
-      .subscribe()
 
     // Auto-refresh community stats every 2 minutes
     const interval = setInterval(async () => {
@@ -180,13 +116,7 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
       }
     }, 120000) // 2 minutes
 
-    return () => {
-      // Cleanup subscriptions
-      supabase.removeChannel(wasteReportsChannel)
-      supabase.removeChannel(dirtyAreaReportsChannel)
-      supabase.removeChannel(profilesChannel)
-      clearInterval(interval)
-    }
+    return () => clearInterval(interval)
   }, [profile.id])
 
   return (
@@ -229,14 +159,14 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
               <CardTitle className="text-lg">Level {profile.level}</CardTitle>
               <Badge variant="secondary" className="flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" />
-                {actualTotalReports}/10 Reports
+                {profile.total_reports}/10 Reports
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
             <Progress value={levelProgress} className="h-2" />
             <p className="text-sm text-muted-foreground mt-2">
-              {10 - (actualTotalReports % 10)} more reports to level up!
+              {10 - (profile.total_reports % 10)} more reports to level up!
             </p>
           </CardContent>
         </Card>
