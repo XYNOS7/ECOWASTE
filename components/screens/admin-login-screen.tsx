@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Shield, Eye, EyeOff, Loader2 } from "lucide-react"
+import { Shield, Eye, EyeOff, Loader2, User } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { auth } from "@/lib/auth"
 import { database } from "@/lib/database"
@@ -18,8 +18,11 @@ interface AdminLoginScreenProps {
 }
 
 export function AdminLoginScreen({ onAdminLogin, onBackToUser }: AdminLoginScreenProps) {
+  const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [username, setUsername] = useState("")
+  const [fullName, setFullName] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
@@ -29,33 +32,67 @@ export function AdminLoginScreen({ onAdminLogin, onBackToUser }: AdminLoginScree
     setIsLoading(true)
 
     try {
-      const { data, error } = await auth.signIn(email, password)
+      let result
 
-      if (error) {
-        toast({
-          title: "Login Failed",
-          description: error.message || "Invalid credentials",
-          variant: "destructive",
+      if (isSignUp) {
+        // Admin sign-up
+        result = await auth.signUp(email, password, { 
+          username, 
+          full_name: fullName,
+          user_type: 'admin'
         })
-        return
-      }
 
-      if (data?.user) {
-        // Check if user is admin
-        const profile = await database.profiles.get(data.user.id)
-        if (profile && profile.user_type === 'admin') {
+        if (result.error) {
           toast({
-            title: "Welcome Admin!",
-            description: "Redirecting to admin dashboard...",
-          })
-          onAdminLogin()
-        } else {
-          await auth.signOut()
-          toast({
-            title: "Access Denied",
-            description: "This account does not have admin privileges",
+            title: "Sign Up Failed",
+            description: result.error.message || "Failed to create admin account",
             variant: "destructive",
           })
+          return
+        }
+
+        toast({
+          title: "Admin Account Created!",
+          description: "Please check your email to verify your account, then sign in.",
+        })
+        
+        // Switch to sign-in mode after successful sign-up
+        setIsSignUp(false)
+        setEmail("")
+        setPassword("")
+        setUsername("")
+        setFullName("")
+        
+      } else {
+        // Admin sign-in
+        result = await auth.signIn(email, password)
+
+        if (result.error) {
+          toast({
+            title: "Login Failed",
+            description: result.error.message || "Invalid credentials",
+            variant: "destructive",
+          })
+          return
+        }
+
+        if (result.data?.user) {
+          // Check if user is admin
+          const profile = await database.profiles.get(result.data.user.id)
+          if (profile && profile.user_type === 'admin') {
+            toast({
+              title: "Welcome Admin!",
+              description: "Redirecting to admin dashboard...",
+            })
+            onAdminLogin()
+          } else {
+            await auth.signOut()
+            toast({
+              title: "Access Denied",
+              description: "This account does not have admin privileges",
+              variant: "destructive",
+            })
+          }
         }
       }
     } catch (err) {
@@ -91,10 +128,39 @@ export function AdminLoginScreen({ onAdminLogin, onBackToUser }: AdminLoginScree
               <span className="text-slate-700 dark:text-slate-300">Admin</span>
               <span className="text-slate-500"> Portal</span>
             </CardTitle>
-            <p className="text-muted-foreground">Access the admin dashboard</p>
+            <p className="text-muted-foreground">
+              {isSignUp ? "Create admin account" : "Access the admin dashboard"}
+            </p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
+              {isSignUp && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="fullName">Full Name</Label>
+                    <Input
+                      id="fullName"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="username">Username</Label>
+                    <Input
+                      id="username"
+                      type="text"
+                      placeholder="Choose a username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      required
+                    />
+                  </div>
+                </>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -138,15 +204,25 @@ export function AdminLoginScreen({ onAdminLogin, onBackToUser }: AdminLoginScree
                 {isLoading ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Signing In...
+                    {isSignUp ? "Creating Account..." : "Signing In..."}
                   </>
                 ) : (
-                  "Sign In as Admin"
+                  isSignUp ? "Create Admin Account" : "Sign In as Admin"
                 )}
               </Button>
             </form>
 
             <div className="mt-6 text-center space-y-2">
+              <div>
+                {isSignUp ? "Already have an admin account?" : "Don't have an admin account?"}{" "}
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto font-normal" 
+                  onClick={() => setIsSignUp(!isSignUp)}
+                >
+                  {isSignUp ? "Sign in" : "Sign up"}
+                </Button>
+              </div>
               <Button variant="link" onClick={onBackToUser} className="text-sm">
                 Back to User Login
               </Button>
