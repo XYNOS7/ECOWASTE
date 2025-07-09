@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -16,6 +17,7 @@ import { auth } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
 import type { WasteReport, DirtyAreaReport } from "@/lib/supabase"
 import { useAuth } from "@/hooks/use-auth"
+
 interface AdminDashboardScreenProps {
   onSignOut: () => void
 }
@@ -140,7 +142,6 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       if (reportType === 'waste') {
         await database.wasteReports.updateStatus(reportId, newStatus as any)
       } else {
-        // For dirty area reports, we'll need to add an update method
         const { error } = await supabase
           .from('dirty_area_reports')
           .update({ status: newStatus, updated_at: new Date().toISOString() })
@@ -154,7 +155,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
         description: `Report status updated to ${newStatus}`,
       })
 
-      fetchReports()
+      // Real-time update will trigger fetchReports automatically
     } catch (error) {
       toast({
         title: "Error",
@@ -179,7 +180,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
         description: "Report deleted successfully",
       })
 
-      fetchReports()
+      // Real-time update will trigger fetchReports automatically
     } catch (error) {
       toast({
         title: "Error",
@@ -218,6 +219,26 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       case 'completed': return 'text-green-600'
       default: return 'text-gray-600'
     }
+  }
+
+  const getNextStatus = (currentStatus: string, reportType: 'waste' | 'dirty-area') => {
+    if (currentStatus === 'pending' || currentStatus === 'reported') {
+      return 'in-progress'
+    }
+    if (currentStatus === 'in-progress' || currentStatus === 'waiting') {
+      return reportType === 'waste' ? 'collected' : 'cleaned'
+    }
+    return null
+  }
+
+  const getActionButtonText = (status: string) => {
+    if (status === 'pending' || status === 'reported') {
+      return 'Verify'
+    }
+    if (status === 'in-progress' || status === 'waiting') {
+      return 'Complete'
+    }
+    return null
   }
 
   return (
@@ -278,157 +299,150 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
           ))}
         </div>
 
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardContent className="p-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Search reports, users, descriptions..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="reported">Reported</SelectItem>
-                  <SelectItem value="in-progress">In Progress</SelectItem>
-                  <SelectItem value="waiting">Waiting</SelectItem>
-                  <SelectItem value="collected">Collected</SelectItem>
-                  <SelectItem value="cleaned">Cleaned</SelectItem>
-                  <SelectItem value="completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="w-full md:w-48">
-                  <SelectValue placeholder="Filter by type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="waste">Waste Reports</SelectItem>
-                  <SelectItem value="dirty-area">Dirty Area Reports</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Reports Table */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="w-5 h-5" />
-              Reports ({filteredReports.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="flex justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Title</TableHead>
-                      <TableHead>User</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredReports.map((report) => (
-                      <TableRow key={`${report.type}-${report.id}`}>
-                        <TableCell>
-                          <Badge variant={report.type === 'waste' ? 'default' : 'secondary'}>
-                            {report.type === 'waste' ? 'Waste' : 'Dirty Area'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">
-                          {report.title}
-                        </TableCell>
-                        <TableCell>
-                          {report.profiles?.username || 'Unknown User'}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={getStatusBadgeVariant(report.status)} className={getStatusColor(report.status)}>
-                            {report.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {'category' in report ? report.category : 'N/A'}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(report.created_at).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            {(report.status === 'pending' || report.status === 'reported') && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => updateReportStatus(report.id, report.type === 'waste' ? 'in-progress' : 'in-progress', report.type)}
-                              >
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Verify
-                              </Button>
-                            )}
-                            {(report.status === 'in-progress' || report.status === 'waiting') && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => updateReportStatus(report.id, report.type === 'waste' ? 'collected' : 'cleaned', report.type)}
-                              >
-                                <CheckCircle className="w-4 h-4 mr-1" />
-                                Complete
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="text-red-600 hover:text-red-700"
-                              onClick={() => deleteReport(report.id, report.type)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                {filteredReports.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    No reports found matching your filters.
-                  </div>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-      <Tabs defaultValue="reports" className="w-full">
+        {/* Tabs for Reports and Admin Management */}
+        <Tabs defaultValue="reports" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="reports">Waste Reports</TabsTrigger>
             <TabsTrigger value="admins">Admin Management</TabsTrigger>
           </TabsList>
 
           <TabsContent value="reports">
-                <Table>
-                  </Table>
+            {/* Filters */}
+            <Card className="mb-6">
+              <CardContent className="p-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <div className="relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Input
+                        placeholder="Search reports, users, descriptions..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
+                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-full md:w-48">
+                      <SelectValue placeholder="Filter by status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="reported">Reported</SelectItem>
+                      <SelectItem value="in-progress">In Progress</SelectItem>
+                      <SelectItem value="waiting">Waiting</SelectItem>
+                      <SelectItem value="collected">Collected</SelectItem>
+                      <SelectItem value="cleaned">Cleaned</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger className="w-full md:w-48">
+                      <SelectValue placeholder="Filter by type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="waste">Waste Reports</SelectItem>
+                      <SelectItem value="dirty-area">Dirty Area Reports</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Reports Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Filter className="w-5 h-5" />
+                  Reports ({filteredReports.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Type</TableHead>
+                          <TableHead>Title</TableHead>
+                          <TableHead>User</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Category</TableHead>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredReports.map((report) => {
+                          const nextStatus = getNextStatus(report.status, report.type)
+                          const actionText = getActionButtonText(report.status)
+                          
+                          return (
+                            <TableRow key={`${report.type}-${report.id}`}>
+                              <TableCell>
+                                <Badge variant={report.type === 'waste' ? 'default' : 'secondary'}>
+                                  {report.type === 'waste' ? 'Waste' : 'Dirty Area'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {report.title}
+                              </TableCell>
+                              <TableCell>
+                                {report.profiles?.username || 'Unknown User'}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant={getStatusBadgeVariant(report.status)} className={getStatusColor(report.status)}>
+                                  {report.status}
+                                </Badge>
+                              </TableCell>
+                              <TableCell>
+                                {'category' in report ? report.category : 'N/A'}
+                              </TableCell>
+                              <TableCell>
+                                {new Date(report.created_at).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {nextStatus && actionText && (
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => updateReportStatus(report.id, nextStatus, report.type)}
+                                    >
+                                      <CheckCircle className="w-4 h-4 mr-1" />
+                                      {actionText}
+                                    </Button>
+                                  )}
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 hover:text-red-700"
+                                    onClick={() => deleteReport(report.id, report.type)}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        })}
+                      </TableBody>
+                    </Table>
+                    {filteredReports.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        No reports found matching your filters.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="admins">
@@ -471,6 +485,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
             </Card>
           </TabsContent>
         </Tabs>
+      </div>
     </div>
   )
 }
