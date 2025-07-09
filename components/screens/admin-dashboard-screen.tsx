@@ -141,6 +141,8 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
     try {
       setLoading(true)
       
+      console.log('Updating report:', { reportId, newStatus, reportType })
+      
       let result
       if (reportType === 'waste') {
         result = await database.wasteReports.updateStatus(reportId, newStatus as any)
@@ -148,8 +150,16 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
         result = await database.dirtyAreaReports.updateStatus(reportId, newStatus as any)
       }
 
+      console.log('Update result:', result)
+
       if (result.error) {
+        console.error('Database error:', result.error)
         throw new Error(result.error.message || 'Failed to update report status')
+      }
+
+      if (!result.data) {
+        console.error('No data returned from update')
+        throw new Error('Report not found or update failed')
       }
 
       // Update local state immediately for better UX

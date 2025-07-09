@@ -226,6 +226,8 @@ export const database = {
 
     async updateStatus(reportId: string, status: WasteReport["status"]) {
       try {
+        console.log('Updating waste report:', { reportId, status })
+        
         // Also update coins_earned if status is completed
         const updateData: any = { 
           status, 
@@ -242,12 +244,20 @@ export const database = {
           .eq("id", reportId)
           .select()
 
+        console.log('Waste report update result:', { data, error })
+
         if (error) {
+          console.error('Supabase error:', error)
           return { data: null, error }
         }
 
+        if (!data || data.length === 0) {
+          console.error('No rows updated for reportId:', reportId)
+          return { data: null, error: new Error('Report not found or no changes made') }
+        }
+
         // Return the first item if data exists, otherwise null
-        return { data: data?.[0] || null, error: null }
+        return { data: data[0], error: null }
       } catch (err) {
         console.error("Database waste report updateStatus error:", err)
         return { data: null, error: err }
@@ -328,6 +338,8 @@ export const database = {
 
     updateStatus: async (reportId: string, status: 'pending' | 'reported' | 'in-progress' | 'waiting' | 'cleaned' | 'completed') => {
       try {
+        console.log('Updating dirty area report:', { reportId, status })
+        
         // Also update coins_earned if status is completed
         const updateData: any = { 
           status, 
@@ -344,12 +356,20 @@ export const database = {
           .eq('id', reportId)
           .select()
 
+        console.log('Dirty area report update result:', { data, error })
+
         if (error) {
+          console.error('Supabase error:', error)
           return { data: null, error }
         }
 
+        if (!data || data.length === 0) {
+          console.error('No rows updated for reportId:', reportId)
+          return { data: null, error: new Error('Report not found or no changes made') }
+        }
+
         // Return the first item if data exists, otherwise null
-        return { data: data?.[0] || null, error: null }
+        return { data: data[0], error: null }
       } catch (err) {
         console.error("Database dirty area report updateStatus error:", err)
         return { data: null, error: err }
