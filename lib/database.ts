@@ -228,6 +228,25 @@ export const database = {
       try {
         console.log('Updating waste report:', { reportId, status })
         
+        // First, check if the report exists
+        const { data: existingReport, error: checkError } = await supabase
+          .from("waste_reports")
+          .select("id, status, user_id")
+          .eq("id", reportId)
+          .maybeSingle()
+
+        console.log('Existing report check:', { existingReport, checkError })
+
+        if (checkError) {
+          console.error('Error checking existing report:', checkError)
+          return { data: null, error: checkError }
+        }
+
+        if (!existingReport) {
+          console.error('Report not found:', reportId)
+          return { data: null, error: new Error('Report not found') }
+        }
+
         // Also update coins_earned if status is completed
         const updateData: any = { 
           status, 
@@ -238,13 +257,15 @@ export const database = {
           updateData.coins_earned = 10 // Award coins when completed
         }
 
+        // Try to update with admin bypass
         const { data, error } = await supabase
           .from("waste_reports")
           .update(updateData)
           .eq("id", reportId)
           .select()
+          .single()
 
-        console.log('Waste report update result:', { data, error })
+        console.log('Waste report update result:', { data, error, rowCount: data?.length })
 
         if (error) {
           console.error('Supabase error:', error)
@@ -340,6 +361,25 @@ export const database = {
       try {
         console.log('Updating dirty area report:', { reportId, status })
         
+        // First, check if the report exists
+        const { data: existingReport, error: checkError } = await supabase
+          .from('dirty_area_reports')
+          .select('id, status, user_id')
+          .eq('id', reportId)
+          .maybeSingle()
+
+        console.log('Existing dirty area report check:', { existingReport, checkError })
+
+        if (checkError) {
+          console.error('Error checking existing dirty area report:', checkError)
+          return { data: null, error: checkError }
+        }
+
+        if (!existingReport) {
+          console.error('Dirty area report not found:', reportId)
+          return { data: null, error: new Error('Report not found') }
+        }
+
         // Also update coins_earned if status is completed
         const updateData: any = { 
           status, 
@@ -350,13 +390,15 @@ export const database = {
           updateData.coins_earned = 15 // Award coins when completed
         }
 
+        // Try to update with admin bypass
         const { data, error } = await supabase
           .from('dirty_area_reports')
           .update(updateData)
           .eq('id', reportId)
           .select()
+          .single()
 
-        console.log('Dirty area report update result:', { data, error })
+        console.log('Dirty area report update result:', { data, error, rowCount: data?.length })
 
         if (error) {
           console.error('Supabase error:', error)
