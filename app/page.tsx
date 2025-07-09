@@ -10,13 +10,15 @@ import { LeaderboardScreen } from "@/components/screens/leaderboard-screen"
 import { RewardsScreen } from "@/components/screens/rewards-screen"
 import { SettingsScreen } from "@/components/screens/settings-screen"
 import { AuthScreen } from "@/components/screens/auth-screen"
+import { AdminLoginScreen } from "@/components/screens/admin-login-screen"
+import { AdminDashboardScreen } from "@/components/screens/admin-dashboard-screen"
 import { AchievementModal } from "@/components/achievement-modal"
 import { LoadingFallback } from "@/components/loading-fallback"
 import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { database } from "@/lib/database"
 
-export type Screen = "home" | "report-waste" | "map" | "leaderboard" | "rewards" | "settings"
+export type Screen = "home" | "report-waste" | "map" | "leaderboard" | "rewards" | "settings" | "auth" | "admin-login" | "admin-dashboard"
 
 function EcoTrackAppContent() {
   const { user, profile, loading, refreshProfile } = useAuth()
@@ -24,6 +26,7 @@ function EcoTrackAppContent() {
   const [showAchievement, setShowAchievement] = useState(false)
   const [newAchievement, setNewAchievement] = useState<any>(null)
   const { toast } = useToast()
+  const [isAdminMode, setIsAdminMode] = useState(false)
 
   const screenVariants = {
     initial: { opacity: 0, x: 20 },
@@ -92,7 +95,7 @@ function EcoTrackAppContent() {
         if (profile) {
           const newReportCount = profile.total_reports + 1
           const newLevel = Math.floor(newReportCount / 10) + 1
-          
+
           if (newLevel > profile.level) {
             await database.profiles.update(user.id, { level: newLevel })
           }
@@ -113,6 +116,25 @@ function EcoTrackAppContent() {
         variant: "destructive",
       })
     }
+  }
+
+  const handleSignOut = () => {
+    setCurrentScreen("auth")
+    setIsAdminMode(false)
+  }
+
+  const handleAdminLogin = () => {
+    setIsAdminMode(true)
+    setCurrentScreen("admin-dashboard")
+  }
+
+  const handleAdminSignOut = () => {
+    setIsAdminMode(false)
+    setCurrentScreen("auth")
+  }
+
+  const handleBackToUser = () => {
+    setCurrentScreen("auth")
   }
 
   const renderScreen = () => {
@@ -140,12 +162,27 @@ function EcoTrackAppContent() {
     return <LoadingFallback />
   }
 
-  if (!user) {
-    return <AuthScreen />
+  // Show auth screen if not authenticated (unless in admin mode)
+  if (!user || (!profile && !isAdminMode)) {
+    if (currentScreen === "admin-login") {
+      return (
+        <AdminLoginScreen 
+          onAdminLogin={handleAdminLogin}
+          onBackToUser={handleBackToUser}
+        />
+      )
+    }
+    return (
+      <AuthScreen 
+        onAuthSuccess={() => setCurrentScreen("home")}
+        onAdminLogin={() => setCurrentScreen("admin-login")}
+      />
+    )
   }
 
-  if (!profile) {
-    return <LoadingFallback />
+  // Show admin dashboard if in admin mode
+  if (isAdminMode && currentScreen === "admin-dashboard") {
+    return <AdminDashboardScreen onSignOut={handleAdminSignOut} />
   }
 
   return (

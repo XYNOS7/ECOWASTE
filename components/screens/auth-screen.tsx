@@ -12,7 +12,12 @@ import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { Leaf, Mail, Lock, User } from "lucide-react"
 
-export function AuthScreen() {
+interface AuthScreenProps {
+  onAuthSuccess: () => void
+  onAdminLogin?: () => void
+}
+
+export function AuthScreen({ onAuthSuccess, onAdminLogin }: AuthScreenProps) {
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -150,9 +155,21 @@ export function AuthScreen() {
               </Button>
             </form>
             <div className="mt-4 text-center">
-              <Button variant="link" onClick={() => setIsSignUp(!isSignUp)} className="text-sm">
-                {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
-              </Button>
+              <div className="text-center text-sm text-muted-foreground space-y-2">
+              <div>
+                {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
+                <Button variant="link" className="p-0 h-auto font-normal" onClick={() => setIsSignUp(!isSignUp)}>
+                  {isSignUp ? "Sign in" : "Sign up"}
+                </Button>
+              </div>
+              {onAdminLogin && (
+                <div>
+                  <Button variant="link" className="p-0 h-auto font-normal text-slate-600" onClick={onAdminLogin}>
+                    Admin Login
+                  </Button>
+                </div>
+              )}
+            </div>
             </div>
           </CardContent>
         </Card>

@@ -1,0 +1,399 @@
+
+"use client"
+
+import { useState, useEffect } from "react"
+import { motion } from "framer-motion"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Shield, Search, CheckCircle, Clock, Trash2, Eye, LogOut, Filter } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
+import { database } from "@/lib/database"
+import { auth } from "@/lib/auth"
+import { supabase } from "@/lib/supabase"
+import type { WasteReport, DirtyAreaReport } from "@/lib/supabase"
+
+interface AdminDashboardScreenProps {
+  onSignOut: () => void
+}
+
+type CombinedReport = (WasteReport | DirtyAreaReport) & {
+  type: 'waste' | 'dirty-area'
+  profiles?: { username: string; avatar_url?: string }
+}
+
+export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
+  const [reports, setReports] = useState<CombinedReport[]>([])
+  const [filteredReports, setFilteredReports] = useState<CombinedReport[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [typeFilter, setTypeFilter] = useState("all")
+  const { toast } = useToast()
+
+  useEffect(() => {
+    fetchReports()
+    
+    // Set up real-time subscriptions
+    const wasteReportsSubscription = supabase
+      .channel('waste_reports_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'waste_reports' }, () => {
+        fetchReports()
+      })
+      .subscribe()
+
+    const dirtyAreaSubscription = supabase
+      .channel('dirty_area_reports_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dirty_area_reports' }, () => {
+        fetchReports()
+      })
+      .subscribe()
+
+    return () => {
+      wasteReportsSubscription.unsubscribe()
+      dirtyAreaSubscription.unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    filterReports()
+  }, [reports, searchTerm, statusFilter, typeFilter])
+
+  const fetchReports = async () => {
+    try {
+      const [wasteReportsData, dirtyAreaReportsData] = await Promise.all([
+        database.wasteReports.getAll(),
+        database.dirtyAreaReports.getAll()
+      ])
+
+      const combinedReports: CombinedReport[] = [
+        ...(wasteReportsData.data || []).map(report => ({ ...report, type: 'waste' as const })),
+        ...(dirtyAreaReportsData.data || []).map(report => ({ ...report, type: 'dirty-area' as const }))
+      ]
+
+      combinedReports.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      setReports(combinedReports)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to fetch reports",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filterReports = () => {
+    let filtered = reports
+
+    if (searchTerm) {
+      filtered = filtered.filter(report => 
+        report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        report.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        report.profiles?.username.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+
+    if (statusFilter !== "all") {
+      filtered = filtered.filter(report => report.status === statusFilter)
+    }
+
+    if (typeFilter !== "all") {
+      filtered = filtered.filter(report => report.type === typeFilter)
+    }
+
+    setFilteredReports(filtered)
+  }
+
+  const updateReportStatus = async (reportId: string, newStatus: string, reportType: 'waste' | 'dirty-area') => {
+    try {
+      if (reportType === 'waste') {
+        await database.wasteReports.updateStatus(reportId, newStatus as any)
+      } else {
+        // For dirty area reports, we'll need to add an update method
+        const { error } = await supabase
+          .from('dirty_area_reports')
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .eq('id', reportId)
+        
+        if (error) throw error
+      }
+
+      toast({
+        title: "Success",
+        description: `Report status updated to ${newStatus}`,
+      })
+      
+      fetchReports()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update report status",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const deleteReport = async (reportId: string, reportType: 'waste' | 'dirty-area') => {
+    try {
+      const tableName = reportType === 'waste' ? 'waste_reports' : 'dirty_area_reports'
+      const { error } = await supabase
+        .from(tableName)
+        .delete()
+        .eq('id', reportId)
+      
+      if (error) throw error
+
+      toast({
+        title: "Success",
+        description: "Report deleted successfully",
+      })
+      
+      fetchReports()
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete report",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleSignOut = async () => {
+    await auth.signOut()
+    onSignOut()
+  }
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'pending': return 'secondary'
+      case 'reported': return 'secondary'
+      case 'in-progress': return 'default'
+      case 'waiting': return 'default'
+      case 'collected': return 'default'
+      case 'cleaned': return 'default'
+      case 'completed': return 'default'
+      default: return 'secondary'
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'text-yellow-600'
+      case 'reported': return 'text-yellow-600'
+      case 'in-progress': return 'text-blue-600'
+      case 'waiting': return 'text-blue-600'
+      case 'collected': return 'text-green-600'
+      case 'cleaned': return 'text-green-600'
+      case 'completed': return 'text-green-600'
+      default: return 'text-gray-600'
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Header */}
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <Shield className="w-8 h-8 text-slate-600 dark:text-slate-400 mr-3" />
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+                  Admin Dashboard
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  EcoTrack Management Portal
+                </p>
+              </div>
+            </div>
+            <Button variant="outline" onClick={handleSignOut}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {[
+            { title: "Total Reports", value: reports.length, color: "text-blue-600" },
+            { title: "Pending", value: reports.filter(r => r.status === 'pending' || r.status === 'reported').length, color: "text-yellow-600" },
+            { title: "In Progress", value: reports.filter(r => r.status === 'in-progress' || r.status === 'waiting').length, color: "text-blue-600" },
+            { title: "Completed", value: reports.filter(r => r.status === 'collected' || r.status === 'cleaned' || r.status === 'completed').length, color: "text-green-600" },
+          ].map((stat, index) => (
+            <motion.div
+              key={stat.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Card>
+                <CardContent className="p-6">
+                  <div className="flex items-center">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                        {stat.title}
+                      </p>
+                      <p className={`text-3xl font-bold ${stat.color}`}>
+                        {stat.value}
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Filters */}
+        <Card className="mb-6">
+          <CardContent className="p-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="Search reports, users, descriptions..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="reported">Reported</SelectItem>
+                  <SelectItem value="in-progress">In Progress</SelectItem>
+                  <SelectItem value="waiting">Waiting</SelectItem>
+                  <SelectItem value="collected">Collected</SelectItem>
+                  <SelectItem value="cleaned">Cleaned</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-full md:w-48">
+                  <SelectValue placeholder="Filter by type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  <SelectItem value="waste">Waste Reports</SelectItem>
+                  <SelectItem value="dirty-area">Dirty Area Reports</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Reports Table */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              Reports ({filteredReports.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Title</TableHead>
+                      <TableHead>User</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Category</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredReports.map((report) => (
+                      <TableRow key={`${report.type}-${report.id}`}>
+                        <TableCell>
+                          <Badge variant={report.type === 'waste' ? 'default' : 'secondary'}>
+                            {report.type === 'waste' ? 'Waste' : 'Dirty Area'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          {report.title}
+                        </TableCell>
+                        <TableCell>
+                          {report.profiles?.username || 'Unknown User'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={getStatusBadgeVariant(report.status)} className={getStatusColor(report.status)}>
+                            {report.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {'category' in report ? report.category : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(report.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {(report.status === 'pending' || report.status === 'reported') && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateReportStatus(report.id, report.type === 'waste' ? 'in-progress' : 'in-progress', report.type)}
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Verify
+                              </Button>
+                            )}
+                            {(report.status === 'in-progress' || report.status === 'waiting') && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateReportStatus(report.id, report.type === 'waste' ? 'collected' : 'cleaned', report.type)}
+                              >
+                                <CheckCircle className="w-4 h-4 mr-1" />
+                                Complete
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:text-red-700"
+                              onClick={() => deleteReport(report.id, report.type)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                {filteredReports.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    No reports found matching your filters.
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
