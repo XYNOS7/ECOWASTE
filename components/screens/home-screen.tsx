@@ -27,7 +27,8 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
   const [loading, setLoading] = useState(true)
   const [userReports, setUserReports] = useState<any[]>([])
 
-  const levelProgress = ((profile.total_reports % 10) / 10) * 100
+  const [actualTotalReports, setActualTotalReports] = useState(profile.total_reports)
+  const levelProgress = ((actualTotalReports % 10) / 10) * 100
 
   const quickActions = [
     {
@@ -91,6 +92,15 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
         // Sort by creation date and limit to 5 most recent
         allReports.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         setUserReports(allReports.slice(0, 5))
+
+        // Update profile with correct total report count if needed
+        const totalUserReports = (wasteReportsResult.data || []).length + (dirtyAreaReportsResult.data || []).length
+        setActualTotalReports(totalUserReports)
+        
+        if (profile.total_reports !== totalUserReports) {
+          console.log(`📊 Updating user total reports from ${profile.total_reports} to ${totalUserReports}`)
+          await database.profiles.update(profile.id, { total_reports: totalUserReports })
+        }
 
       } catch (error) {
         console.error("Error fetching home screen data:", error)
@@ -219,14 +229,14 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
               <CardTitle className="text-lg">Level {profile.level}</CardTitle>
               <Badge variant="secondary" className="flex items-center gap-1">
                 <TrendingUp className="w-3 h-3" />
-                {profile.total_reports}/10 Reports
+                {actualTotalReports}/10 Reports
               </Badge>
             </div>
           </CardHeader>
           <CardContent>
             <Progress value={levelProgress} className="h-2" />
             <p className="text-sm text-muted-foreground mt-2">
-              {10 - (profile.total_reports % 10)} more reports to level up!
+              {10 - (actualTotalReports % 10)} more reports to level up!
             </p>
           </CardContent>
         </Card>

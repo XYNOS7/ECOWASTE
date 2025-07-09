@@ -308,7 +308,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       return 'in-progress'
     }
     if (currentStatus === 'in-progress' || currentStatus === 'waiting') {
-      return reportType === 'waste' ? 'collected' : 'completed'
+      return reportType === 'waste' ? 'collected' : 'cleaned'
     }
     return null
   }
@@ -355,7 +355,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
             { title: "Total Reports", value: reports.length, color: "text-blue-600" },
             { title: "Pending", value: reports.filter(r => r.status === 'pending' || r.status === 'reported').length, color: "text-yellow-600" },
             { title: "In Progress", value: reports.filter(r => r.status === 'in-progress' || r.status === 'waiting').length, color: "text-blue-600" },
-            { title: "Completed", value: reports.filter(r => r.status === 'collected' || r.status === 'cleaned' || r.status === 'completed').length, color: "text-green-600" },
+            { title: "Completed", value: reports.filter(r => r.status === 'collected' || r.status === 'cleaned').length, color: "text-green-600" },
           ].map((stat, index) => (
             <motion.div
               key={stat.title}
@@ -414,7 +414,6 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                       <SelectItem value="reported">Reported</SelectItem>
                       <SelectItem value="in-progress">In Progress</SelectItem>
                       <SelectItem value="waiting">Waiting</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
                       <SelectItem value="collected">Collected</SelectItem>
                       <SelectItem value="cleaned">Cleaned</SelectItem>
                     </SelectContent>
