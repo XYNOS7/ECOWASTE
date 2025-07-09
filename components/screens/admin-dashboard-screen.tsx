@@ -243,6 +243,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       case 'collected': return 'default'
       case 'cleaned': return 'default'
       case 'completed': return 'default'
+      case 'rejected': return 'destructive'
       default: return 'secondary'
     }
   }
@@ -256,6 +257,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       case 'collected': return 'text-green-600'
       case 'cleaned': return 'text-green-600'
       case 'completed': return 'text-green-600'
+      case 'rejected': return 'text-red-600'
       default: return 'text-gray-600'
     }
   }
@@ -265,7 +267,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       return 'in-progress'
     }
     if (currentStatus === 'in-progress' || currentStatus === 'waiting') {
-      return reportType === 'waste' ? 'completed' : 'completed'
+      return reportType === 'waste' ? 'collected' : 'completed'
     }
     return null
   }
@@ -312,7 +314,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
             { title: "Total Reports", value: reports.length, color: "text-blue-600" },
             { title: "Pending", value: reports.filter(r => r.status === 'pending' || r.status === 'reported').length, color: "text-yellow-600" },
             { title: "In Progress", value: reports.filter(r => r.status === 'in-progress' || r.status === 'waiting').length, color: "text-blue-600" },
-            { title: "Completed", value: reports.filter(r => r.status === 'completed' || r.status === 'collected' || r.status === 'cleaned').length, color: "text-green-600" },
+            { title: "Completed", value: reports.filter(r => r.status === 'collected' || r.status === 'cleaned' || r.status === 'completed').length, color: "text-green-600" },
           ].map((stat, index) => (
             <motion.div
               key={stat.title}

@@ -253,8 +253,8 @@ export const database = {
           updated_at: new Date().toISOString() 
         }
         
-        if (status === 'completed' || status === 'collected') {
-          updateData.coins_earned = 10 // Award coins when completed
+        if (status === 'collected') {
+          updateData.coins_earned = 10 // Award coins when collected
         }
 
         // Try to update with admin bypass
