@@ -259,25 +259,18 @@ export const database = {
 
   // Dirty area report operations
   dirtyAreaReports: {
-    async create(report: Omit<DirtyAreaReport, "id" | "created_at" | "updated_at" | "coins_earned" | "status">) {
-      try {
-        const { data, error } = await supabase.from("dirty_area_reports").insert(report).select().single()
-        return { data, error }
-      } catch (err) {
-        console.error("Database dirty area report create error:", err)
-        return { data: null, error: err }
-      }
-    },
-
     async getAll() {
       try {
         const { data, error } = await supabase
           .from("dirty_area_reports")
           .select(`
-            *,
-            profiles:user_id (username, avatar_url)
-          `)
-          .order("created_at", { ascending: false })
+          *,
+          profiles:user_id (
+            username,
+            avatar_url
+          )
+        `)
+          .order('created_at', { ascending: false })
 
         return { data, error }
       } catch (err) {
@@ -290,14 +283,51 @@ export const database = {
       try {
         const { data, error } = await supabase
           .from("dirty_area_reports")
-          .select("*")
-          .eq("user_id", userId)
-          .order("created_at", { ascending: false })
+          .select('*')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
 
         return { data, error }
       } catch (err) {
         console.error("Database dirty area reports getByUser error:", err)
         return { data: [], error: err }
+      }
+    },
+
+    async create(report: Omit<DirtyAreaReport, 'id' | 'created_at' | 'updated_at' | 'coins_earned' | 'status'>) {
+      try {
+        const { data, error } = await supabase
+          .from('dirty_area_reports')
+          .insert([{
+            ...report,
+            status: 'pending'
+          }])
+          .select()
+          .single()
+
+        return { data, error }
+      } catch (err) {
+        console.error("Database dirty area report create error:", err)
+        return { data: null, error: err }
+      }
+    },
+
+    updateStatus: async (reportId: string, status: 'pending' | 'reported' | 'in-progress' | 'waiting' | 'cleaned' | 'completed') => {
+      try {
+        const { data, error } = await supabase
+          .from('dirty_area_reports')
+          .update({ 
+            status, 
+            updated_at: new Date().toISOString() 
+          })
+          .eq('id', reportId)
+          .select()
+          .single()
+
+        return { data, error }
+      } catch (err) {
+        console.error("Database dirty area report updateStatus error:", err)
+        return { data: null, error: err }
       }
     },
   },
