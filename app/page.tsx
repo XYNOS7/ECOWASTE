@@ -21,7 +21,7 @@ import { database } from "@/lib/database"
 export type Screen = "home" | "report-waste" | "map" | "leaderboard" | "rewards" | "settings" | "auth" | "admin-login" | "admin-dashboard"
 
 function EcoTrackAppContent() {
-  const { user, profile, loading, refreshProfile } = useAuth()
+  const { user, profile, loading, refreshProfile, signOut } = useAuth()
   const [currentScreen, setCurrentScreen] = useState<Screen>("home")
   const [showAchievement, setShowAchievement] = useState(false)
   const [newAchievement, setNewAchievement] = useState<any>(null)
@@ -118,9 +118,16 @@ function EcoTrackAppContent() {
     }
   }
 
-  const handleSignOut = () => {
-    setCurrentScreen("auth")
-    setIsAdminMode(false)
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      setCurrentScreen("auth")
+      setIsAdminMode(false)
+    } catch (error) {
+      console.error("Sign out error:", error)
+      setCurrentScreen("auth")
+      setIsAdminMode(false)
+    }
   }
 
   const handleAdminLogin = () => {
@@ -128,9 +135,16 @@ function EcoTrackAppContent() {
     setCurrentScreen("admin-dashboard")
   }
 
-  const handleAdminSignOut = () => {
-    setIsAdminMode(false)
-    setCurrentScreen("auth")
+  const handleAdminSignOut = async () => {
+    try {
+      await signOut()
+      setIsAdminMode(false)
+      setCurrentScreen("auth")
+    } catch (error) {
+      console.error("Admin sign out error:", error)
+      setIsAdminMode(false)
+      setCurrentScreen("auth")
+    }
   }
 
   const handleBackToUser = () => {
