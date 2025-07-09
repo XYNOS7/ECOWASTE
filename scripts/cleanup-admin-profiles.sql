@@ -1,4 +1,5 @@
 
+
 -- =============================================
 -- Clean up Admin Users from Profiles Table
 -- Run this script in Supabase SQL Editor
@@ -8,7 +9,11 @@
 DELETE FROM profiles 
 WHERE id IN (SELECT id FROM admins);
 
--- Update the trigger function to prevent future conflicts
+-- Drop the trigger first before dropping functions
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP TRIGGER IF EXISTS on_admin_user_created ON auth.users;
+
+-- Now drop the functions
 DROP FUNCTION IF EXISTS handle_user_registration();
 DROP FUNCTION IF EXISTS handle_admin_registration();
 DROP FUNCTION IF EXISTS handle_new_user();
@@ -47,8 +52,6 @@ END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Recreate the trigger
-DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
-DROP TRIGGER IF EXISTS on_admin_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION handle_user_registration();
@@ -57,3 +60,4 @@ CREATE TRIGGER on_auth_user_created
 -- Cleanup Complete!
 -- Now admin signups will only go to admins table
 -- =============================================
+
