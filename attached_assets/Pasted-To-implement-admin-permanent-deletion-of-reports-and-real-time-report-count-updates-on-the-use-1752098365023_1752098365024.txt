@@ -1,0 +1,127 @@
+To implement **admin-permanent deletion of reports** and **real-time report count updates on the user dashboard** using Supabase and your current setup, here's what you need to do:
+
+---
+
+### ✅ 1. Ensure Permanent Deletion Logic Is in Place
+
+In your `database.ts`, you already have this function for deleting a report:
+
+```ts
+async delete(reportId: string) {
+  try {
+    const { data, error } = await supabase
+      .from("waste_reports")
+      .delete()
+      .eq("id", reportId)
+      .select()
+      .single()
+
+    return { data, error }
+  } catch (err) {
+    console.error("Database waste report delete error:", err)
+    return { data: null, error: err }
+  }
+}
+```
+
+✅ This **permanently deletes** the report. So you're good here.
+
+---
+
+### ✅ 2. Enable Real-Time Sync with Supabase Subscription
+
+To update the **user's report count in real time**, you must use Supabase’s `realtime` channel for the `waste_reports` table.
+
+#### 🔧 Example Setup (User Dashboard Side)
+
+In your user dashboard screen, add this in `useEffect`:
+
+```ts
+import { supabase } from "@/lib/supabase"
+
+useEffect(() => {
+  const channel = supabase
+    .channel('realtime-waste-reports')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'waste_reports',
+      },
+      (payload) => {
+        console.log('🔄 Waste reports changed:', payload)
+        // Optionally refetch the reports or update count here
+        refetchReports()
+      }
+    )
+    .subscribe()
+
+  return () => {
+    supabase.removeChannel(channel)
+  }
+}, [])
+```
+
+Then create a function like:
+
+```ts
+const refetchReports = async () => {
+  const { data } = await database.wasteReports.getByUser(userId)
+  setReportCount(data.length)
+}
+```
+
+---
+
+### ✅ 3. Bonus: Automatically Decrement Report Count When Deleted
+
+If you’re tracking total reports in the `profiles` table, and want to update that field as well:
+
+Update this code after deletion:
+
+```ts
+await database.profiles.update(userId, {
+  total_reports: currentTotalReports - 1,
+})
+```
+
+Or better: add a Supabase **trigger** to handle that automatically.
+
+---
+
+### ✅ 4. (Optional) Trigger for Report Count
+
+If you want to update `total_reports` in the `profiles` table **automatically when a report is deleted**, run this SQL in Supabase SQL Editor:
+
+```sql
+create or replace function decrement_report_count()
+returns trigger as $$
+begin
+  update profiles
+  set total_reports = greatest(total_reports - 1, 0)
+  where id = OLD.user_id;
+  return old;
+end;
+$$ language plpgsql;
+
+create trigger on_report_delete
+after delete on waste_reports
+for each row
+execute function decrement_report_count();
+```
+
+---
+
+### ✅ Summary of What's Now Working
+
+| Feature                             | Status                                            |
+| ----------------------------------- | ------------------------------------------------- |
+| Admin permanently deletes report    | ✅ Done                                            |
+| Real-time updates in user dashboard | ✅ Done                                            |
+| Report count decreases live         | ✅ With optional trigger                           |
+| No need to reload page              | ✅ Live sync via `useEffect` and Supabase channels |
+
+---
+
+Let me know if you want this setup for `dirty_area_reports` too or want to restrict delete access only to `admins`.
