@@ -35,7 +35,7 @@ export function AdminLoginScreen({ onAdminLogin, onBackToUser }: AdminLoginScree
       let result
 
       if (isSignUp) {
-        // Admin sign-up
+        // Admin sign-up: Create auth user first
         result = await auth.signUp(email, password, { 
           username, 
           full_name: fullName
