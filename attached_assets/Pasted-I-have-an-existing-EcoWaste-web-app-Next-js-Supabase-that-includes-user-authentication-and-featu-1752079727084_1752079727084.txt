@@ -1,0 +1,98 @@
+I have an existing EcoWaste web app (Next.js + Supabase) that includes user authentication and features like waste reporting, eco-coins, real-time updates, and map integration.
+
+I now want to add Admin functionality into the same app, with a separate login/signup flow and a protected admin dashboard.
+
+💼 Admin Authentication
+Use Supabase Auth for both users and admins.
+
+Store additional role data in a user_type field (e.g. user or admin) in the Supabase users table or in a separate admins table.
+
+🔑 Admin Auth Requirements:
+Add /admin-login and /admin-signup pages.
+
+On admin signup:
+
+Register with Supabase Auth.
+
+Set user_type: 'admin' in the database or insert into admins table.
+
+On login:
+
+Check if user_type === 'admin'
+
+If true, redirect to /admin-dashboard
+
+Else, reject login or redirect to user section
+
+🧠 Admin Dashboard (/admin-dashboard)
+Display a table/grid of all user-reported waste reports:
+
+Fields: report_id, image, description, location, category, user_id, status, timestamp
+
+🎯 Admin Features:
+View reports with filters: pending, waiting, completed
+
+Actions:
+
+✅ Verify (changes status to waiting)
+
+✔️ Complete (changes status to completed)
+
+❌ Delete report
+
+Real-time updates:
+
+Use Supabase Realtime to reflect report status updates instantly on both user and admin sides
+
+Auto-update user dashboard if admin verifies or completes a report
+
+🛠️ Technical Setup
+✅ Supabase Tables:
+Use existing reports table (add status field if not present)
+
+Optionally create a new admins table:
+
+sql
+Copy
+Edit
+CREATE TABLE admins (
+  id uuid PRIMARY KEY REFERENCES auth.users(id),
+  email text UNIQUE,
+  created_at timestamp default now()
+);
+✅ Auth Check (Middleware or Route Guard):
+Use Supabase session to check if logged-in user is admin
+
+Protect /admin-dashboard route:
+
+Redirect non-admins to home or /login
+
+Show admin dashboard only if session user is of type admin
+
+⚡ Bonus Features (Optional):
+📍 Location Map preview on reports
+
+🔄 Admin action history (admin_logs table)
+
+🔔 Toast/alert notifications on action complete
+
+🌙 Dark mode toggle for admin
+
+📱 Mobile-friendly dashboard UI
+
+🧪 Prompt Summary for ChatGPT/Replit:
+"Enhance my existing EcoWaste web app (Next.js + Supabase) to include:
+
+An /admin-login and /admin-signup page with Supabase Auth.
+
+Admin role check (either in user_type or a new admins table).
+
+After successful login/signup, redirect admin to /admin-dashboard.
+
+On /admin-dashboard, fetch and display all user reports (with status, location, etc.).
+
+Admin can update report status from 'pending' → 'waiting' → 'completed' or delete it.
+
+Use Supabase Realtime to reflect updates instantly for both admin and users.
+
+Keep existing user login, signup, and report system untouched."
