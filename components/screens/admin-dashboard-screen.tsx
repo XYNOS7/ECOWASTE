@@ -141,12 +141,15 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
     try {
       setLoading(true)
       
+      let result
       if (reportType === 'waste') {
-        const { data, error } = await database.wasteReports.updateStatus(reportId, newStatus as any)
-        if (error) throw error
+        result = await database.wasteReports.updateStatus(reportId, newStatus as any)
       } else {
-        const { data, error } = await database.dirtyAreaReports.updateStatus(reportId, newStatus as any)
-        if (error) throw error
+        result = await database.dirtyAreaReports.updateStatus(reportId, newStatus as any)
+      }
+
+      if (result.error) {
+        throw new Error(result.error.message || 'Failed to update report status')
       }
 
       // Update local state immediately for better UX

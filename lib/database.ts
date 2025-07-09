@@ -241,9 +241,13 @@ export const database = {
           .update(updateData)
           .eq("id", reportId)
           .select()
-          .single()
 
-        return { data, error }
+        if (error) {
+          return { data: null, error }
+        }
+
+        // Return the first item if data exists, otherwise null
+        return { data: data?.[0] || null, error: null }
       } catch (err) {
         console.error("Database waste report updateStatus error:", err)
         return { data: null, error: err }
@@ -339,9 +343,13 @@ export const database = {
           .update(updateData)
           .eq('id', reportId)
           .select()
-          .single()
 
-        return { data, error }
+        if (error) {
+          return { data: null, error }
+        }
+
+        // Return the first item if data exists, otherwise null
+        return { data: data?.[0] || null, error: null }
       } catch (err) {
         console.error("Database dirty area report updateStatus error:", err)
         return { data: null, error: err }
