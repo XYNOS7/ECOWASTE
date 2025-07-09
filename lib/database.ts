@@ -263,7 +263,6 @@ export const database = {
           .update(updateData)
           .eq("id", reportId)
           .select()
-          .single()
 
         console.log('Waste report update result:', { data, error, rowCount: data?.length })
 
@@ -274,7 +273,7 @@ export const database = {
 
         if (!data || data.length === 0) {
           console.error('No rows updated for reportId:', reportId)
-          return { data: null, error: new Error('Report not found or no changes made') }
+          return { data: null, error: new Error('Report not found or no changes made - likely RLS policy blocking admin update') }
         }
 
         // Return the first item if data exists, otherwise null
@@ -396,7 +395,6 @@ export const database = {
           .update(updateData)
           .eq('id', reportId)
           .select()
-          .single()
 
         console.log('Dirty area report update result:', { data, error, rowCount: data?.length })
 
@@ -407,7 +405,7 @@ export const database = {
 
         if (!data || data.length === 0) {
           console.error('No rows updated for reportId:', reportId)
-          return { data: null, error: new Error('Report not found or no changes made') }
+          return { data: null, error: new Error('Report not found or no changes made - likely RLS policy blocking admin update') }
         }
 
         // Return the first item if data exists, otherwise null
