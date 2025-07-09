@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Coins, Leaf, Flame, TrendingUp, Camera, MapPin, Lightbulb, Trophy } from "lucide-react"
 import { database } from "@/lib/database"
+import { supabase } from "@/lib/supabase"
 import type { Screen } from "@/app/page"
 import type { Profile, ActivityLog } from "@/lib/supabase"
 import { Activity } from "lucide-react"
@@ -100,6 +101,59 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
 
     fetchData()
 
+    // Set up real-time subscriptions for live updates
+    const wasteReportsChannel = supabase
+      .channel('realtime-waste-reports-user')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'waste_reports',
+          filter: `user_id=eq.${profile.id}`
+        },
+        (payload) => {
+          console.log('🔄 User waste reports changed:', payload)
+          fetchData() // Refetch all data when user's reports change
+        }
+      )
+      .subscribe()
+
+    const dirtyAreaReportsChannel = supabase
+      .channel('realtime-dirty-area-reports-user')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'dirty_area_reports',
+          filter: `user_id=eq.${profile.id}`
+        },
+        (payload) => {
+          console.log('🔄 User dirty area reports changed:', payload)
+          fetchData() // Refetch all data when user's reports change
+        }
+      )
+      .subscribe()
+
+    const profilesChannel = supabase
+      .channel('realtime-profile-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles',
+          filter: `id=eq.${profile.id}`
+        },
+        (payload) => {
+          console.log('🔄 User profile updated:', payload)
+          // Force refresh of the page to get updated profile data
+          window.location.reload()
+        }
+      )
+      .subscribe()
+
     // Auto-refresh community stats every 2 minutes
     const interval = setInterval(async () => {
       try {
@@ -116,7 +170,13 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
       }
     }, 120000) // 2 minutes
 
-    return () => clearInterval(interval)
+    return () => {
+      // Cleanup subscriptions
+      supabase.removeChannel(wasteReportsChannel)
+      supabase.removeChannel(dirtyAreaReportsChannel)
+      supabase.removeChannel(profilesChannel)
+      clearInterval(interval)
+    }
   }, [profile.id])
 
   return (

@@ -227,7 +227,7 @@ export const database = {
     async updateStatus(reportId: string, status: WasteReport["status"]) {
       try {
         console.log('Updating waste report:', { reportId, status })
-        
+
         // First, check if the report exists
         const { data: existingReport, error: checkError } = await supabase
           .from("waste_reports")
@@ -252,7 +252,7 @@ export const database = {
           status, 
           updated_at: new Date().toISOString() 
         }
-        
+
         if (status === 'collected') {
           updateData.coins_earned = 10 // Award coins when collected
         }
@@ -359,7 +359,7 @@ export const database = {
     updateStatus: async (reportId: string, status: 'pending' | 'reported' | 'in-progress' | 'waiting' | 'cleaned' | 'completed') => {
       try {
         console.log('Updating dirty area report:', { reportId, status })
-        
+
         // First, check if the report exists
         const { data: existingReport, error: checkError } = await supabase
           .from('dirty_area_reports')
@@ -384,7 +384,7 @@ export const database = {
           status, 
           updated_at: new Date().toISOString() 
         }
-        
+
         if (status === 'completed' || status === 'cleaned') {
           updateData.coins_earned = 15 // Award coins when completed
         }
@@ -412,6 +412,22 @@ export const database = {
         return { data: data[0], error: null }
       } catch (err) {
         console.error("Database dirty area report updateStatus error:", err)
+        return { data: null, error: err }
+      }
+    },
+
+    async delete(reportId: string) {
+      try {
+        const { data, error } = await supabase
+          .from("dirty_area_reports")
+          .delete()
+          .eq("id", reportId)
+          .select()
+          .single()
+
+        return { data, error }
+      } catch (err) {
+        console.error("Database dirty area report delete error:", err)
         return { data: null, error: err }
       }
     },

@@ -191,20 +191,59 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
   }
 
   const deleteReport = async (reportId: string, reportType: 'waste' | 'dirty-area') => {
-    // Confirm deletion
-    if (!confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+    // Confirm deletion with stronger warning
+    if (!confirm('⚠️ PERMANENT DELETION WARNING ⚠️\n\nThis will PERMANENTLY delete this report from the database and cannot be undone.\n\nThe user\'s report count will be decremented and this action is irreversible.\n\nAre you absolutely sure you want to proceed?')) {
       return
     }
 
     try {
       setLoading(true)
-      const tableName = reportType === 'waste' ? 'waste_reports' : 'dirty_area_reports'
-      const { error } = await supabase
-        .from(tableName)
-        .delete()
-        .eq('id', reportId)
+      
+      // Get the report details before deletion to update user stats
+      const report = reports.find(r => r.id === reportId && r.type === reportType)
+      
+      if (!report) {
+        throw new Error('Report not found')
+      }
 
-      if (error) throw error
+      console.log('🗑️ Admin permanently deleting report:', { reportId, reportType, userId: report.user_id })
+
+      // Permanently delete from database
+      let deleteResult
+      if (reportType === 'waste') {
+        deleteResult = await database.wasteReports.delete(reportId)
+      } else {
+        // For dirty area reports, use direct Supabase delete
+        deleteResult = await supabase
+          .from('dirty_area_reports')
+          .delete()
+          .eq('id', reportId)
+          .select()
+          .single()
+      }
+
+      if (deleteResult.error) {
+        throw deleteResult.error
+      }
+
+      // Update user's profile to decrement total_reports
+      if (report.user_id) {
+        const { data: userProfile } = await supabase
+          .from('profiles')
+          .select('total_reports')
+          .eq('id', report.user_id)
+          .single()
+
+        if (userProfile) {
+          await supabase
+            .from('profiles')
+            .update({ 
+              total_reports: Math.max(userProfile.total_reports - 1, 0),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', report.user_id)
+        }
+      }
 
       // Update local state immediately
       setReports(prevReports => 
@@ -212,16 +251,18 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       )
 
       toast({
-        title: "Success",
-        description: "Report deleted successfully",
+        title: "Report Permanently Deleted",
+        description: `${reportType === 'waste' ? 'Waste' : 'Dirty Area'} report has been permanently removed from the database`,
       })
 
-      // Real-time update will trigger fetchReports automatically
+      console.log('✅ Report permanently deleted successfully')
+
+      // Real-time subscriptions will notify user dashboards automatically
     } catch (error: any) {
-      console.error('Error deleting report:', error)
+      console.error('❌ Error permanently deleting report:', error)
       toast({
-        title: "Error",
-        description: error?.message || "Failed to delete report",
+        title: "Deletion Failed",
+        description: error?.message || "Failed to permanently delete report",
         variant: "destructive",
       })
     } finally {
