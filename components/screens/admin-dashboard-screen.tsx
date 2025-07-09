@@ -191,55 +191,20 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
   }
 
   const deleteReport = async (reportId: string, reportType: 'waste' | 'dirty-area') => {
-    // Confirm deletion with stronger warning
-    if (!confirm('⚠️ PERMANENT DELETION WARNING ⚠️\n\nThis will PERMANENTLY delete this report from the database and cannot be undone.\n\nThe user\'s report count will be decremented and this action is irreversible.\n\nAre you absolutely sure you want to proceed?')) {
+    // Confirm deletion
+    if (!confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
       return
     }
 
     try {
       setLoading(true)
-      
-      // Get the report details before deletion to update user stats
-      const report = reports.find(r => r.id === reportId && r.type === reportType)
-      
-      if (!report) {
-        throw new Error('Report not found')
-      }
-
-      console.log('🗑️ Admin permanently deleting report:', { reportId, reportType, userId: report.user_id })
-
-      // Use direct Supabase delete for both types to avoid trigger issues
       const tableName = reportType === 'waste' ? 'waste_reports' : 'dirty_area_reports'
-      
-      const deleteResult = await supabase
+      const { error } = await supabase
         .from(tableName)
         .delete()
         .eq('id', reportId)
-        .select()
-        .single()
 
-      if (deleteResult.error) {
-        throw deleteResult.error
-      }
-
-      // Manually update user's profile to decrement total_reports
-      if (report.user_id) {
-        const { data: userProfile } = await supabase
-          .from('profiles')
-          .select('total_reports')
-          .eq('id', report.user_id)
-          .single()
-
-        if (userProfile && userProfile.total_reports > 0) {
-          await supabase
-            .from('profiles')
-            .update({ 
-              total_reports: Math.max(userProfile.total_reports - 1, 0),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', report.user_id)
-        }
-      }
+      if (error) throw error
 
       // Update local state immediately
       setReports(prevReports => 
@@ -247,19 +212,16 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       )
 
       toast({
-        title: "Report Permanently Deleted",
-        description: `${reportType === 'waste' ? 'Waste' : 'Dirty Area'} report has been permanently removed from the database`,
+        title: "Success",
+        description: "Report deleted successfully",
       })
 
-      console.log('✅ Report permanently deleted successfully')
-
-      // Refresh reports to get the latest data
-      await fetchReports()
+      // Real-time update will trigger fetchReports automatically
     } catch (error: any) {
-      console.error('❌ Error permanently deleting report:', error)
+      console.error('Error deleting report:', error)
       toast({
-        title: "Deletion Failed",
-        description: error?.message || "Failed to permanently delete report",
+        title: "Error",
+        description: error?.message || "Failed to delete report",
         variant: "destructive",
       })
     } finally {
@@ -281,7 +243,6 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       case 'collected': return 'default'
       case 'cleaned': return 'default'
       case 'completed': return 'default'
-      case 'rejected': return 'destructive'
       default: return 'secondary'
     }
   }
@@ -295,7 +256,6 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       case 'collected': return 'text-green-600'
       case 'cleaned': return 'text-green-600'
       case 'completed': return 'text-green-600'
-      case 'rejected': return 'text-red-600'
       default: return 'text-gray-600'
     }
   }
@@ -305,7 +265,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       return 'in-progress'
     }
     if (currentStatus === 'in-progress' || currentStatus === 'waiting') {
-      return reportType === 'waste' ? 'collected' : 'cleaned'
+      return reportType === 'waste' ? 'completed' : 'completed'
     }
     return null
   }
@@ -352,7 +312,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
             { title: "Total Reports", value: reports.length, color: "text-blue-600" },
             { title: "Pending", value: reports.filter(r => r.status === 'pending' || r.status === 'reported').length, color: "text-yellow-600" },
             { title: "In Progress", value: reports.filter(r => r.status === 'in-progress' || r.status === 'waiting').length, color: "text-blue-600" },
-            { title: "Completed", value: reports.filter(r => r.status === 'collected' || r.status === 'cleaned').length, color: "text-green-600" },
+            { title: "Completed", value: reports.filter(r => r.status === 'completed' || r.status === 'collected' || r.status === 'cleaned').length, color: "text-green-600" },
           ].map((stat, index) => (
             <motion.div
               key={stat.title}
@@ -411,6 +371,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                       <SelectItem value="reported">Reported</SelectItem>
                       <SelectItem value="in-progress">In Progress</SelectItem>
                       <SelectItem value="waiting">Waiting</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
                       <SelectItem value="collected">Collected</SelectItem>
                       <SelectItem value="cleaned">Cleaned</SelectItem>
                     </SelectContent>
