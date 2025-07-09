@@ -38,8 +38,7 @@ export function AdminLoginScreen({ onAdminLogin, onBackToUser }: AdminLoginScree
         // Admin sign-up
         result = await auth.signUp(email, password, { 
           username, 
-          full_name: fullName,
-          user_type: 'admin'
+          full_name: fullName
         })
 
         if (result.error) {
@@ -49,6 +48,28 @@ export function AdminLoginScreen({ onAdminLogin, onBackToUser }: AdminLoginScree
             variant: "destructive",
           })
           return
+        }
+
+        // If signup successful and user is created, add to admins table
+        if (result.data?.user) {
+          const adminData = {
+            id: result.data.user.id,
+            username: username,
+            email: email,
+            full_name: fullName,
+            avatar_url: null
+          }
+
+          const { error: adminError } = await database.admins.create(adminData)
+          
+          if (adminError) {
+            toast({
+              title: "Admin Setup Failed",
+              description: "Account created but admin permissions failed. Please contact support.",
+              variant: "destructive",
+            })
+            return
+          }
         }
 
         toast({
