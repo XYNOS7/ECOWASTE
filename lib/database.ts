@@ -226,9 +226,19 @@ export const database = {
 
     async updateStatus(reportId: string, status: WasteReport["status"]) {
       try {
+        // Also update coins_earned if status is completed
+        const updateData: any = { 
+          status, 
+          updated_at: new Date().toISOString() 
+        }
+        
+        if (status === 'completed' || status === 'collected') {
+          updateData.coins_earned = 10 // Award coins when completed
+        }
+
         const { data, error } = await supabase
           .from("waste_reports")
-          .update({ status, updated_at: new Date().toISOString() })
+          .update(updateData)
           .eq("id", reportId)
           .select()
           .single()
@@ -314,12 +324,19 @@ export const database = {
 
     updateStatus: async (reportId: string, status: 'pending' | 'reported' | 'in-progress' | 'waiting' | 'cleaned' | 'completed') => {
       try {
+        // Also update coins_earned if status is completed
+        const updateData: any = { 
+          status, 
+          updated_at: new Date().toISOString() 
+        }
+        
+        if (status === 'completed' || status === 'cleaned') {
+          updateData.coins_earned = 15 // Award coins when completed
+        }
+
         const { data, error } = await supabase
           .from('dirty_area_reports')
-          .update({ 
-            status, 
-            updated_at: new Date().toISOString() 
-          })
+          .update(updateData)
           .eq('id', reportId)
           .select()
           .single()

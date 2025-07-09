@@ -85,7 +85,7 @@ export interface WasteReport {
   location_lat?: number
   location_lng?: number
   location_address?: string
-  status: "pending" | "in-progress" | "collected" | "rejected"
+  status: "pending" | "in-progress" | "collected" | "completed" | "rejected"
   ai_detected_category?: string
   coins_earned: number
   created_at: string
@@ -101,7 +101,7 @@ export interface DirtyAreaReport {
   location_lat?: number
   location_lng?: number
   location_address?: string
-  status: "reported" | "in-progress" | "cleaned" | "rejected"
+  status: "pending" | "reported" | "in-progress" | "waiting" | "cleaned" | "completed" | "rejected"
   coins_earned: number
   created_at: string
   updated_at: string

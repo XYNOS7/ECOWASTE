@@ -139,34 +139,58 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
 
   const updateReportStatus = async (reportId: string, newStatus: string, reportType: 'waste' | 'dirty-area') => {
     try {
+      setLoading(true)
+      
       if (reportType === 'waste') {
-        await database.wasteReports.updateStatus(reportId, newStatus as any)
+        const { error } = await database.wasteReports.updateStatus(reportId, newStatus as any)
+        if (error) throw error
       } else {
         const { error } = await supabase
           .from('dirty_area_reports')
-          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .update({ 
+            status: newStatus, 
+            updated_at: new Date().toISOString() 
+          })
           .eq('id', reportId)
 
         if (error) throw error
       }
 
+      // Update local state immediately for better UX
+      setReports(prevReports => 
+        prevReports.map(report => 
+          report.id === reportId && report.type === reportType
+            ? { ...report, status: newStatus, updated_at: new Date().toISOString() }
+            : report
+        )
+      )
+
       toast({
         title: "Success",
-        description: `Report status updated to ${newStatus}`,
+        description: `Report status updated to ${newStatus.replace('-', ' ')}`,
       })
 
       // Real-time update will trigger fetchReports automatically
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error updating report status:', error)
       toast({
         title: "Error",
-        description: "Failed to update report status",
+        description: error?.message || "Failed to update report status",
         variant: "destructive",
       })
+    } finally {
+      setLoading(false)
     }
   }
 
   const deleteReport = async (reportId: string, reportType: 'waste' | 'dirty-area') => {
+    // Confirm deletion
+    if (!confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+      return
+    }
+
     try {
+      setLoading(true)
       const tableName = reportType === 'waste' ? 'waste_reports' : 'dirty_area_reports'
       const { error } = await supabase
         .from(tableName)
@@ -175,18 +199,26 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
 
       if (error) throw error
 
+      // Update local state immediately
+      setReports(prevReports => 
+        prevReports.filter(report => !(report.id === reportId && report.type === reportType))
+      )
+
       toast({
         title: "Success",
         description: "Report deleted successfully",
       })
 
       // Real-time update will trigger fetchReports automatically
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Error deleting report:', error)
       toast({
         title: "Error",
-        description: "Failed to delete report",
+        description: error?.message || "Failed to delete report",
         variant: "destructive",
       })
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -226,7 +258,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       return 'in-progress'
     }
     if (currentStatus === 'in-progress' || currentStatus === 'waiting') {
-      return reportType === 'waste' ? 'collected' : 'cleaned'
+      return reportType === 'waste' ? 'completed' : 'completed'
     }
     return null
   }
@@ -273,7 +305,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
             { title: "Total Reports", value: reports.length, color: "text-blue-600" },
             { title: "Pending", value: reports.filter(r => r.status === 'pending' || r.status === 'reported').length, color: "text-yellow-600" },
             { title: "In Progress", value: reports.filter(r => r.status === 'in-progress' || r.status === 'waiting').length, color: "text-blue-600" },
-            { title: "Completed", value: reports.filter(r => r.status === 'collected' || r.status === 'cleaned' || r.status === 'completed').length, color: "text-green-600" },
+            { title: "Completed", value: reports.filter(r => r.status === 'completed' || r.status === 'collected' || r.status === 'cleaned').length, color: "text-green-600" },
           ].map((stat, index) => (
             <motion.div
               key={stat.title}
@@ -332,9 +364,9 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                       <SelectItem value="reported">Reported</SelectItem>
                       <SelectItem value="in-progress">In Progress</SelectItem>
                       <SelectItem value="waiting">Waiting</SelectItem>
+                      <SelectItem value="completed">Completed</SelectItem>
                       <SelectItem value="collected">Collected</SelectItem>
                       <SelectItem value="cleaned">Cleaned</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
                     </SelectContent>
                   </Select>
                   <Select value={typeFilter} onValueChange={setTypeFilter}>
@@ -413,6 +445,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                                     <Button
                                       size="sm"
                                       variant="outline"
+                                      disabled={loading}
                                       onClick={() => updateReportStatus(report.id, nextStatus, report.type)}
                                     >
                                       <CheckCircle className="w-4 h-4 mr-1" />
@@ -423,6 +456,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                                     size="sm"
                                     variant="outline"
                                     className="text-red-600 hover:text-red-700"
+                                    disabled={loading}
                                     onClick={() => deleteReport(report.id, report.type)}
                                   >
                                     <Trash2 className="w-4 h-4" />
