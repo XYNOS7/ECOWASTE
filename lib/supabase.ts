@@ -61,7 +61,16 @@ export interface Profile {
   streak: number
   level: number
   total_reports: number
-  user_type?: 'user' | 'admin'
+  created_at: string
+  updated_at: string
+}
+
+export interface Admin {
+  id: string
+  username: string
+  email: string
+  full_name: string
+  avatar_url?: string
   created_at: string
   updated_at: string
 }

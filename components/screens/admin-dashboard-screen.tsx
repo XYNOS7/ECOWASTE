@@ -1,21 +1,20 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Shield, Search, CheckCircle, Clock, Trash2, Eye, LogOut, Filter } from "lucide-react"
+import { Shield, Search, CheckCircle, Clock, Trash2, Eye, LogOut, Filter, Users } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { database } from "@/lib/database"
 import { auth } from "@/lib/auth"
 import { supabase } from "@/lib/supabase"
 import type { WasteReport, DirtyAreaReport } from "@/lib/supabase"
-
+import { useAuth } from "@/hooks/use-auth"
 interface AdminDashboardScreenProps {
   onSignOut: () => void
 }
@@ -26,7 +25,10 @@ type CombinedReport = (WasteReport | DirtyAreaReport) & {
 }
 
 export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
+  const { user } = useAuth()
+  const [admin, setAdmin] = useState<any>(null)
   const [reports, setReports] = useState<CombinedReport[]>([])
+  const [admins, setAdmins] = useState<any[]>([])
   const [filteredReports, setFilteredReports] = useState<CombinedReport[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
@@ -35,8 +37,31 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
   const { toast } = useToast()
 
   useEffect(() => {
+    if (user) {
+      loadAdminData()
+      fetchReports()
+      loadAdmins()
+    }
+  }, [user])
+
+  const loadAdminData = async () => {
+    if (!user) return
+    const adminData = await database.admins.get(user.id)
+    setAdmin(adminData)
+  }
+
+  const loadAdmins = async () => {
+    const { data, error } = await database.admins.getAll()
+    if (error) {
+      console.error("Error loading admins:", error)
+    } else {
+      setAdmins(data || [])
+    }
+  }
+
+  useEffect(() => {
     fetchReports()
-    
+
     // Set up real-time subscriptions
     const wasteReportsSubscription = supabase
       .channel('waste_reports_changes')
@@ -119,7 +144,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
           .from('dirty_area_reports')
           .update({ status: newStatus, updated_at: new Date().toISOString() })
           .eq('id', reportId)
-        
+
         if (error) throw error
       }
 
@@ -127,7 +152,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
         title: "Success",
         description: `Report status updated to ${newStatus}`,
       })
-      
+
       fetchReports()
     } catch (error) {
       toast({
@@ -145,14 +170,14 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
         .from(tableName)
         .delete()
         .eq('id', reportId)
-      
+
       if (error) throw error
 
       toast({
         title: "Success",
         description: "Report deleted successfully",
       })
-      
+
       fetchReports()
     } catch (error) {
       toast({
@@ -394,6 +419,57 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
           </CardContent>
         </Card>
       </div>
+      <Tabs defaultValue="reports" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="reports">Waste Reports</TabsTrigger>
+            <TabsTrigger value="admins">Admin Management</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="reports">
+                <Table>
+                  </Table>
+          </TabsContent>
+
+          <TabsContent value="admins">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Admin Management
+                </CardTitle>
+                <CardDescription>
+                  Manage admin accounts and permissions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Full Name</TableHead>
+                      <TableHead>Username</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {admins.map((adminItem) => (
+                      <TableRow key={adminItem.id}>
+                        <TableCell className="font-medium">{adminItem.full_name}</TableCell>
+                        <TableCell>{adminItem.username}</TableCell>
+                        <TableCell>{adminItem.email}</TableCell>
+                        <TableCell>{new Date(adminItem.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">Admin</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
     </div>
   )
 }

@@ -77,9 +77,9 @@ export function AdminLoginScreen({ onAdminLogin, onBackToUser }: AdminLoginScree
         }
 
         if (result.data?.user) {
-          // Check if user is admin
-          const profile = await database.profiles.get(result.data.user.id)
-          if (profile && profile.user_type === 'admin') {
+          // Check if user is admin by checking admins table
+          const isAdmin = await database.admins.checkIfAdmin(result.data.user.id)
+          if (isAdmin) {
             toast({
               title: "Welcome Admin!",
               description: "Redirecting to admin dashboard...",
