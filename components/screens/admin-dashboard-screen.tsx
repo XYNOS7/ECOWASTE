@@ -142,17 +142,10 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       setLoading(true)
       
       if (reportType === 'waste') {
-        const { error } = await database.wasteReports.updateStatus(reportId, newStatus as any)
+        const { data, error } = await database.wasteReports.updateStatus(reportId, newStatus as any)
         if (error) throw error
       } else {
-        const { error } = await supabase
-          .from('dirty_area_reports')
-          .update({ 
-            status: newStatus, 
-            updated_at: new Date().toISOString() 
-          })
-          .eq('id', reportId)
-
+        const { data, error } = await database.dirtyAreaReports.updateStatus(reportId, newStatus as any)
         if (error) throw error
       }
 
@@ -170,7 +163,8 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
         description: `Report status updated to ${newStatus.replace('-', ' ')}`,
       })
 
-      // Real-time update will trigger fetchReports automatically
+      // Refresh reports to get the latest data
+      await fetchReports()
     } catch (error: any) {
       console.error('Error updating report status:', error)
       toast({
