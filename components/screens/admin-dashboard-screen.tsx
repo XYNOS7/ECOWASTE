@@ -1,7 +1,7 @@
 
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -633,8 +633,10 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
             </Card>
           </motion.div>
         </div>
+        )}
 
         {/* Recent Reports Activity */}
+        {activeTab === "dashboard" && (
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
