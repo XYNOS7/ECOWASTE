@@ -35,14 +35,33 @@ interface DashboardStats {
   reportsGrowth: string
 }
 
+interface User {
+  id: string
+  username: string
+  email: string
+  full_name: string
+  avatar_url?: string
+  eco_coins: number
+  waste_collected: number
+  streak: number
+  level: number
+  total_reports: number
+  created_at: string
+  updated_at: string
+}
+
 export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
   const { user } = useAuth()
   const [admin, setAdmin] = useState<any>(null)
   const [reports, setReports] = useState<CombinedReport[]>([])
   const [admins, setAdmins] = useState<any[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [filteredReports, setFilteredReports] = useState<CombinedReport[]>([])
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState("dashboard")
   const [searchTerm, setSearchTerm] = useState("")
+  const [userSearchTerm, setUserSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [typeFilter, setTypeFilter] = useState("all")
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
@@ -60,9 +79,23 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       loadAdminData()
       fetchReports()
       loadAdmins()
+      loadUsers()
       fetchDashboardStats()
     }
   }, [user])
+
+  const loadUsers = async () => {
+    try {
+      const { data, error } = await database.profiles.getLeaderboard(1000)
+      if (error) {
+        console.error("Error loading users:", error)
+      } else {
+        setUsers(data || [])
+      }
+    } catch (error) {
+      console.error("Error fetching users:", error)
+    }
+  }
 
   const loadAdminData = async () => {
     if (!user) return
@@ -169,6 +202,24 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
   useEffect(() => {
     filterReports()
   }, [reports, searchTerm, statusFilter, typeFilter])
+
+  useEffect(() => {
+    filterUsers()
+  }, [users, userSearchTerm])
+
+  const filterUsers = () => {
+    let filtered = users
+
+    if (userSearchTerm) {
+      filtered = filtered.filter(user => 
+        user.full_name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        user.username.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        user.email.toLowerCase().includes(userSearchTerm.toLowerCase())
+      )
+    }
+
+    setFilteredUsers(filtered)
+  }
 
   const fetchReports = async () => {
     try {
@@ -301,6 +352,102 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
     }
   }
 
+  const deleteUser = async (userId: string, userName: string) => {
+    if (!confirm(`Are you sure you want to permanently delete ${userName} and all their data? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      setLoading(true)
+
+      // Delete user's waste reports
+      const { error: wasteReportsError } = await supabase
+        .from('waste_reports')
+        .delete()
+        .eq('user_id', userId)
+
+      if (wasteReportsError) {
+        console.error('Error deleting waste reports:', wasteReportsError)
+      }
+
+      // Delete user's dirty area reports
+      const { error: dirtyAreaReportsError } = await supabase
+        .from('dirty_area_reports')
+        .delete()
+        .eq('user_id', userId)
+
+      if (dirtyAreaReportsError) {
+        console.error('Error deleting dirty area reports:', dirtyAreaReportsError)
+      }
+
+      // Delete user's activity logs
+      const { error: activityLogsError } = await supabase
+        .from('activity_logs')
+        .delete()
+        .eq('user_id', userId)
+
+      if (activityLogsError) {
+        console.error('Error deleting activity logs:', activityLogsError)
+      }
+
+      // Delete user's achievements
+      const { error: achievementsError } = await supabase
+        .from('user_achievements')
+        .delete()
+        .eq('user_id', userId)
+
+      if (achievementsError) {
+        console.error('Error deleting user achievements:', achievementsError)
+      }
+
+      // Delete user's rewards
+      const { error: rewardsError } = await supabase
+        .from('user_rewards')
+        .delete()
+        .eq('user_id', userId)
+
+      if (rewardsError) {
+        console.error('Error deleting user rewards:', rewardsError)
+      }
+
+      // Delete user profile
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId)
+
+      if (profileError) throw profileError
+
+      // Delete auth user (this will cascade delete everything else)
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId)
+      
+      if (authError) {
+        console.error('Error deleting auth user:', authError)
+        // Still continue if profile deletion worked
+      }
+
+      // Update local state
+      setUsers(prevUsers => prevUsers.filter(u => u.id !== userId))
+      
+      toast({
+        title: "Success",
+        description: `User ${userName} and all their data has been permanently deleted`,
+      })
+
+      // Refresh dashboard stats
+      await Promise.all([fetchDashboardStats(), loadUsers()])
+    } catch (error: any) {
+      console.error('Error deleting user:', error)
+      toast({
+        title: "Error",
+        description: error?.message || "Failed to delete user. Some data may have been partially deleted.",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const handleSignOut = async () => {
     await auth.signOut()
     onSignOut()
@@ -393,13 +540,28 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
         {/* Navigation Tabs */}
         <div className="mb-8">
           <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-fit">
-            <Button variant="default" size="sm" className="bg-blue-600 text-white">
+            <Button 
+              variant={activeTab === "dashboard" ? "default" : "ghost"} 
+              size="sm" 
+              className={activeTab === "dashboard" ? "bg-blue-600 text-white" : "text-gray-600"}
+              onClick={() => setActiveTab("dashboard")}
+            >
               Dashboard
             </Button>
-            <Button variant="ghost" size="sm" className="text-gray-600">
+            <Button 
+              variant={activeTab === "users" ? "default" : "ghost"} 
+              size="sm" 
+              className={activeTab === "users" ? "bg-green-600 text-white" : "text-gray-600"}
+              onClick={() => setActiveTab("users")}
+            >
               Users
             </Button>
-            <Button variant="ghost" size="sm" className="text-gray-600">
+            <Button 
+              variant={activeTab === "reports" ? "default" : "ghost"} 
+              size="sm" 
+              className={activeTab === "reports" ? "bg-purple-600 text-white" : "text-gray-600"}
+              onClick={() => setActiveTab("reports")}
+            >
               Reports
             </Button>
             <Button variant="ghost" size="sm" className="text-gray-600">
@@ -408,7 +570,8 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
           </div>
         </div>
 
-        {/* Dashboard Stats Cards */}
+        {/* Dashboard Stats Cards - Only show on dashboard tab */}
+        {activeTab === "dashboard" && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Total Users */}
           <motion.div
@@ -537,6 +700,116 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
             </CardContent>
           </Card>
         </motion.div>
+        )}
+
+        {/* Users Section */}
+        {activeTab === "users" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0 mb-6">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Users className="w-6 h-6" />
+                <CardTitle className="text-white text-xl">User Management</CardTitle>
+              </div>
+              <p className="text-green-100 text-sm">Manage user accounts and permissions</p>
+            </CardHeader>
+            <CardContent>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-200 w-4 h-4" />
+                <Input
+                  placeholder="Search users..."
+                  value={userSearchTerm}
+                  onChange={(e) => setUserSearchTerm(e.target.value)}
+                  className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-green-200"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Registered Users ({filteredUsers.length})
+              </CardTitle>
+              <CardDescription>
+                All registered users in the system with their details and actions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Username</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Eco Coins</TableHead>
+                        <TableHead>Reports</TableHead>
+                        <TableHead>Level</TableHead>
+                        <TableHead>Joined</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.map((userItem) => (
+                        <TableRow key={userItem.id}>
+                          <TableCell className="font-medium">
+                            {userItem.full_name || 'N/A'}
+                          </TableCell>
+                          <TableCell>{userItem.username}</TableCell>
+                          <TableCell>{userItem.email}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              <Coins className="w-4 h-4 text-yellow-500" />
+                              {userItem.eco_coins}
+                            </div>
+                          </TableCell>
+                          <TableCell>{userItem.total_reports}</TableCell>
+                          <TableCell>
+                            <Badge variant="secondary">Level {userItem.level}</Badge>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(userItem.created_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              disabled={loading}
+                              onClick={() => deleteUser(userItem.id, userItem.full_name || userItem.username)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {filteredUsers.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      No users found matching your search.
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+        )}
+
+        {/* Reports Section - Only show on reports tab */}
+        {activeTab === "reports" && (
 
         {/* Tabs for Reports and Admin Management */}
         <Tabs defaultValue="reports" className="w-full">
@@ -726,6 +999,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
             </Card>
           </TabsContent>
         </Tabs>
+        )}
       </div>
     </div>
   )
