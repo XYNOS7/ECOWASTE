@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Shield, Search, CheckCircle, Clock, Trash2, Eye, LogOut, Filter, Users, TrendingUp, AlertTriangle, Activity } from "lucide-react"
+import { Shield, Search, CheckCircle, Clock, Trash2, Eye, LogOut, Filter, Users, TrendingUp, AlertTriangle, Activity, Coins } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { database } from "@/lib/database"
 import { auth } from "@/lib/auth"
@@ -810,9 +810,13 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
 
         {/* Reports Section - Only show on reports tab */}
         {activeTab === "reports" && (
-
-        {/* Tabs for Reports and Admin Management */}
-        <Tabs defaultValue="reports" className="w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          {/* Tabs for Reports and Admin Management */}
+          <Tabs defaultValue="reports" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="reports">Waste Reports</TabsTrigger>
             <TabsTrigger value="admins">Admin Management</TabsTrigger>
@@ -998,7 +1002,8 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
               </CardContent>
             </Card>
           </TabsContent>
-        </Tabs>
+          </Tabs>
+        </motion.div>
         )}
       </div>
     </div>
