@@ -752,24 +752,18 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Name</TableHead>
                         <TableHead>Username</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Eco Coins</TableHead>
                         <TableHead>Reports</TableHead>
-                        <TableHead>Level</TableHead>
-                        <TableHead>Joined</TableHead>
                         <TableHead>Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredUsers.map((userItem) => (
                         <TableRow key={userItem.id}>
-                          <TableCell className="font-medium">
-                            {userItem.full_name || 'N/A'}
-                          </TableCell>
-                          <TableCell>{userItem.username}</TableCell>
-                          <TableCell>{userItem.email}</TableCell>
+                          <TableCell className="font-medium">{userItem.username}</TableCell>
+                          <TableCell className="font-mono text-sm">{userItem.email}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
                               <Coins className="w-4 h-4 text-yellow-500" />
@@ -777,12 +771,6 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                             </div>
                           </TableCell>
                           <TableCell>{userItem.total_reports}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">Level {userItem.level}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            {new Date(userItem.created_at).toLocaleDateString()}
-                          </TableCell>
                           <TableCell>
                             <Button
                               size="sm"
