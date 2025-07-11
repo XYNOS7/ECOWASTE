@@ -564,7 +564,12 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
             >
               Reports
             </Button>
-            <Button variant="ghost" size="sm" className="text-gray-600">
+            <Button 
+              variant={activeTab === "settings" ? "default" : "ghost"} 
+              size="sm" 
+              className={activeTab === "settings" ? "bg-indigo-600 text-white" : "text-gray-600"}
+              onClick={() => setActiveTab("settings")}
+            >
               Settings
             </Button>
           </div>
@@ -798,6 +803,166 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
         </motion.div>
         )}
 
+        {/* Settings Section */}
+        {activeTab === "settings" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="space-y-6"
+        >
+          {/* Admin Profile Section */}
+          <Card className="bg-gradient-to-r from-blue-500 to-purple-600 text-white border-0">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <CardTitle className="text-white text-xl">Admin Profile</CardTitle>
+                  <p className="text-blue-100 text-sm">Manage your admin account and preferences</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-16 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                    {admin?.username?.charAt(0).toUpperCase() || 'A'}
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-semibold text-white">{admin?.full_name || 'Admin User'}</h3>
+                    <p className="text-blue-100">@{admin?.username || 'admin'}</p>
+                    <p className="text-blue-200 text-sm">{admin?.email || 'admin@example.com'}</p>
+                    <Badge className="mt-2 bg-blue-500 text-white">ADMIN</Badge>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-blue-100 text-sm">
+                    <Activity className="w-4 h-4" />
+                    Member Since
+                  </div>
+                  <p className="text-white font-semibold">
+                    {admin?.created_at ? new Date(admin.created_at).toLocaleDateString() : '7/10/2025'}
+                  </p>
+                </div>
+                <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
+                  <div className="flex items-center gap-2 text-blue-100 text-sm">
+                    <Users className="w-4 h-4" />
+                    Last Updated
+                  </div>
+                  <p className="text-white font-semibold">
+                    {admin?.updated_at ? new Date(admin.updated_at).toLocaleDateString() : '7/10/2025'}
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Admin Management Section */}
+          <Card className="bg-gradient-to-r from-purple-500 to-indigo-600 text-white border-0">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <Users className="w-6 h-6 text-white" />
+                <div>
+                  <CardTitle className="text-white text-xl">Admin Management</CardTitle>
+                  <p className="text-purple-100 text-sm">View and manage other admin accounts</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-purple-200 w-4 h-4" />
+                <Input
+                  placeholder="Search admins..."
+                  className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-purple-200"
+                />
+              </div>
+              
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {admins.map((adminItem, index) => (
+                    <motion.div
+                      key={adminItem.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.1 + index * 0.1 }}
+                      className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white font-bold">
+                            {adminItem.username?.charAt(0).toUpperCase() || 'A'}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-white">{adminItem.full_name || adminItem.username}</span>
+                              <Badge className="bg-indigo-500 text-white text-xs">
+                                {adminItem.id === admin?.id ? 'SUPER ADMIN' : 'ADMIN'}
+                              </Badge>
+                            </div>
+                            <p className="text-purple-100 text-sm">@{adminItem.username}</p>
+                            <p className="text-purple-200 text-xs">{adminItem.email}</p>
+                            <p className="text-purple-200 text-xs">
+                              Last active: {new Date(adminItem.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                          <span className="text-green-300 text-xs">ACTIVE</span>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))}
+                  
+                  {admins.length === 0 && (
+                    <div className="text-center py-8">
+                      <Users className="w-12 h-12 mx-auto text-purple-200 mb-3" />
+                      <p className="text-purple-100">No admin accounts found</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Account Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-red-600">Account Actions</CardTitle>
+              <CardDescription>Manage your admin session</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                <div className="flex items-center gap-3">
+                  <LogOut className="w-5 h-5 text-red-600" />
+                  <div className="flex-1">
+                    <h4 className="font-medium text-red-700 dark:text-red-400">Sign Out</h4>
+                    <p className="text-sm text-red-600 dark:text-red-300">End your current admin session</p>
+                  </div>
+                  <Button 
+                    variant="destructive" 
+                    onClick={handleSignOut}
+                    className="bg-red-600 hover:bg-red-700"
+                  >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Sign Out
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+        )}
+
         {/* Reports Section - Only show on reports tab */}
         {activeTab === "reports" && (
         <motion.div
@@ -805,14 +970,58 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          {/* Tabs for Reports and Admin Management */}
-          <Tabs defaultValue="reports" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="reports">Waste Reports</TabsTrigger>
-            <TabsTrigger value="admins">Admin Management</TabsTrigger>
-          </TabsList>
+          {/* Reports Content */}
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row gap-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      placeholder="Search reports, users, descriptions..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="Filter by status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="reported">Reported</SelectItem>
+                    <SelectItem value="in-progress">In Progress</SelectItem>
+                    <SelectItem value="waiting">Waiting</SelectItem>
+                    <SelectItem value="completed">Completed</SelectItem>
+                    <SelectItem value="collected">Collected</SelectItem>
+                    <SelectItem value="cleaned">Cleaned</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="w-full md:w-48">
+                    <SelectValue placeholder="Filter by type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="waste">Waste Reports</SelectItem>
+                    <SelectItem value="dirty-area">Dirty Area Reports</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
 
-          <TabsContent value="reports">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Filter className="w-5 h-5" />
+                Reports ({filteredReports.length})
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
             {/* Filters */}
             <Card className="mb-6">
               <CardContent className="p-6">
@@ -953,46 +1162,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
             </Card>
           </TabsContent>
 
-          <TabsContent value="admins">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Admin Management
-                </CardTitle>
-                <CardDescription>
-                  Manage admin accounts and permissions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Full Name</TableHead>
-                      <TableHead>Username</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {admins.map((adminItem) => (
-                      <TableRow key={adminItem.id}>
-                        <TableCell className="font-medium">{adminItem.full_name}</TableCell>
-                        <TableCell>{adminItem.username}</TableCell>
-                        <TableCell>{adminItem.email}</TableCell>
-                        <TableCell>{new Date(adminItem.created_at).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">Admin</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          </Tabs>
+          
         </motion.div>
         )}
       </div>
