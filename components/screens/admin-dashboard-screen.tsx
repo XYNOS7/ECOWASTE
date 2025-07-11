@@ -1022,59 +1022,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-            {/* Filters */}
-            <Card className="mb-6">
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <Input
-                        placeholder="Search reports, users, descriptions..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
-                    </div>
-                  </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full md:w-48">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="reported">Reported</SelectItem>
-                      <SelectItem value="in-progress">In Progress</SelectItem>
-                      <SelectItem value="waiting">Waiting</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="collected">Collected</SelectItem>
-                      <SelectItem value="cleaned">Cleaned</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger className="w-full md:w-48">
-                      <SelectValue placeholder="Filter by type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="waste">Waste Reports</SelectItem>
-                      <SelectItem value="dirty-area">Dirty Area Reports</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Reports Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Filter className="w-5 h-5" />
-                  Reports ({filteredReports.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+            
                 {loading ? (
                   <div className="flex justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -1160,9 +1108,6 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-
-          
         </motion.div>
         )}
       </div>
