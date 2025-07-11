@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect } from "react"
@@ -55,14 +54,103 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
   const [recentActivity, setRecentActivity] = useState<CombinedReport[]>([])
   const { toast } = useToast()
 
+  // New states for user management
+  const [users, setUsers] = useState<any[]>([])
+  const [filteredUsers, setFilteredUsers] = useState<any[]>([])
+  const [userSearchTerm, setUserSearchTerm] = useState("")
+  const [activeTab, setActiveTab] = useState("reports") // Default to reports tab
+
   useEffect(() => {
     if (user) {
       loadAdminData()
       fetchReports()
       loadAdmins()
       fetchDashboardStats()
+      fetchUsers() // Load users
     }
   }, [user])
+
+  // Fetch users from database
+  const fetchUsers = async () => {
+    try {
+      setLoading(true)
+      const { data, error } = await database.profiles.getLeaderboard(1000) // Assuming 1000 is enough for now
+      if (error) {
+        throw error
+      }
+      setUsers(data || [])
+      setFilteredUsers(data || [])
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to fetch users",
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    filterUsers()
+  }, [users, userSearchTerm])
+
+  const filterUsers = () => {
+    let filtered = users
+
+    if (userSearchTerm) {
+      filtered = filtered.filter(user =>
+        user.full_name?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        user.username?.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        user.email?.toLowerCase().includes(userSearchTerm.toLowerCase())
+      )
+    }
+
+    setFilteredUsers(filtered)
+  }
+
+  const deleteUser = async (userId: string, userEmail: string) => {
+    if (!confirm(`Are you sure you want to permanently delete user ${userEmail}? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      setLoading(true)
+      // Delete user from auth
+      const { error: authError } = await supabase.auth.admin.deleteUser(userId)
+      if (authError) {
+        throw authError
+      }
+
+      // Delete user from profiles table
+      const { error: profilesError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId)
+
+      if (profilesError) {
+        throw profilesError
+      }
+
+      // Optimistically update the UI
+      setUsers(prevUsers => prevUsers.filter(user => user.id !== userId))
+      setFilteredUsers(prevFilteredUsers => prevFilteredUsers.filter(user => user.id !== userId))
+
+      toast({
+        title: "Success",
+        description: `User ${userEmail} deleted successfully`,
+      })
+    } catch (error: any) {
+      console.error('Error deleting user:', error)
+      toast({
+        title: "Error",
+        description: error.message || `Failed to delete user ${userEmail}`,
+        variant: "destructive",
+      })
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const loadAdminData = async () => {
     if (!user) return
@@ -220,7 +308,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
   const updateReportStatus = async (reportId: string, newStatus: string, reportType: 'waste' | 'dirty-area') => {
     try {
       setLoading(true)
-      
+
       let result
       if (reportType === 'waste') {
         result = await database.wasteReports.updateStatus(reportId, newStatus as any)
@@ -391,161 +479,176 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Navigation Tabs */}
-        <div className="mb-8">
-          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg w-fit">
-            <Button variant="default" size="sm" className="bg-blue-600 text-white">
-              Dashboard
-            </Button>
-            <Button variant="ghost" size="sm" className="text-gray-600">
-              Users
-            </Button>
-            <Button variant="ghost" size="sm" className="text-gray-600">
-              Reports
-            </Button>
-            <Button variant="ghost" size="sm" className="text-gray-600">
-              Settings
-            </Button>
-          </div>
-        </div>
-
-        {/* Dashboard Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Total Users */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-100 text-sm font-medium mb-1">Total Users</p>
-                    <p className="text-3xl font-bold">{dashboardStats.totalUsers.toLocaleString()}</p>
-                    <p className="text-blue-100 text-sm mt-2">{dashboardStats.userGrowth} from last month</p>
-                  </div>
-                  <Users className="w-12 h-12 text-blue-200" />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Total Reports */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-          >
-            <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-green-100 text-sm font-medium mb-1">Total Reports</p>
-                    <p className="text-3xl font-bold">{dashboardStats.totalReports.toLocaleString()}</p>
-                    <p className="text-green-100 text-sm mt-2">{dashboardStats.reportsGrowth} from yesterday</p>
-                  </div>
-                  <TrendingUp className="w-12 h-12 text-green-200" />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
-          {/* Incomplete Reports */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-orange-100 text-sm font-medium mb-1">Incomplete Reports</p>
-                    <p className="text-3xl font-bold">{dashboardStats.incompleteReports}</p>
-                    <p className="text-orange-100 text-sm mt-2">Requires attention</p>
-                  </div>
-                  <AlertTriangle className="w-12 h-12 text-orange-200" />
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-        </div>
-
-        {/* Recent Reports Activity */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="mb-8"
-        >
-          <Card className="bg-gradient-to-r from-purple-500 to-pink-500 text-white border-0">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Activity className="w-5 h-5" />
-                <CardTitle className="text-white">Recent Reports Activity</CardTitle>
-              </div>
-              <p className="text-purple-100 text-sm">Latest user reports that need attention or are in progress</p>
-            </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="animate-pulse bg-purple-400/30 h-16 rounded-lg"></div>
-                  ))}
-                </div>
-              ) : recentActivity.length > 0 ? (
-                <div className="space-y-3">
-                  {recentActivity.map((report, index) => (
-                    <motion.div
-                      key={report.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 + index * 0.1 }}
-                      className="bg-white/10 backdrop-blur-sm rounded-lg p-4 border border-white/20"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <AlertTriangle className="w-5 h-5 text-yellow-300" />
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{report.profiles?.username || 'Anonymous User'}</span>
-                              {getPriorityBadge(report.status)}
-                              <Badge variant="outline" className="text-white border-white/30 text-xs">
-                                {report.status.toUpperCase()}
-                              </Badge>
-                            </div>
-                            <p className="text-purple-100 text-sm">{report.title}</p>
-                            <p className="text-purple-200 text-xs">
-                              Submitted report • {new Date(report.created_at).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10">
-                          View Report
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Activity className="w-12 h-12 mx-auto text-purple-200 mb-3" />
-                  <p className="text-purple-100">No recent activity</p>
-                  <p className="text-purple-200 text-sm">All reports are up to date!</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Tabs for Reports and Admin Management */}
+        {/* Navigation Tabs */}
         <Tabs defaultValue="reports" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="reports">Waste Reports</TabsTrigger>
+            <TabsTrigger value="reports" onClick={() => setActiveTab("reports")}>Waste Reports</TabsTrigger>
+            <TabsTrigger value="users" onClick={() => setActiveTab("users")}>Users</TabsTrigger>
             <TabsTrigger value="admins">Admin Management</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="reports">
+          <TabsContent value="admins">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Admin Management
+                </CardTitle>
+                <CardDescription>
+                  Manage admin accounts and permissions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Full Name</TableHead>
+                      <TableHead>Username</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {admins.map((adminItem) => (
+                      <TableRow key={adminItem.id}>
+                        <TableCell className="font-medium">{adminItem.full_name}</TableCell>
+                        <TableCell>{adminItem.username}</TableCell>
+                        <TableCell>{adminItem.email}</TableCell>
+                        <TableCell>{new Date(adminItem.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">Admin</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <>
+        {/* Users Management Section */}
+        {activeTab === "users" && (
+          <div className="space-y-6">
+            {/* User Management Header */}
+            <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Users className="w-8 h-8" />
+                    <div>
+                      <h2 className="text-2xl font-bold">User Management</h2>
+                      <p className="text-green-100">Manage user accounts and permissions</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-3xl font-bold">{users.length}</p>
+                    <p className="text-green-100 text-sm">Total Users</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Search Users */}
+            <Card>
+              <CardContent className="p-6">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="Search users..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Users Table */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Users ({filteredUsers.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Username</TableHead>
+                          <TableHead>Email</TableHead>
+                          <TableHead>Eco Coins</TableHead>
+                          <TableHead>Reports</TableHead>
+                          <TableHead>Level</TableHead>
+                          <TableHead>Joined</TableHead>
+                          <TableHead>Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredUsers.map((userItem) => (
+                          <TableRow key={userItem.id}>
+                            <TableCell className="font-medium">
+                              {userItem.full_name || 'N/A'}
+                            </TableCell>
+                            <TableCell>{userItem.username || 'N/A'}</TableCell>
+                            <TableCell>{userItem.email}</TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">
+                                {userItem.eco_coins || 0}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {userItem.total_reports || 0}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="default">
+                                Level {userItem.level || 1}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {new Date(userItem.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                disabled={loading}
+                                onClick={() => deleteUser(userItem.id, userItem.email)}
+                                className="hover:bg-red-600"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                    {filteredUsers.length === 0 && (
+                      <div className="text-center py-8 text-gray-500">
+                        No users found matching your search.
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Reports Management Section */}
+        {activeTab === "reports" && (
+          <div className="space-y-6">
             {/* Filters */}
             <Card className="mb-6">
               <CardContent className="p-6">
@@ -621,7 +724,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                         {filteredReports.map((report) => {
                           const nextStatus = getNextStatus(report.status, report.type)
                           const actionText = getActionButtonText(report.status)
-                          
+
                           return (
                             <TableRow key={`${report.type}-${report.id}`}>
                               <TableCell>
@@ -684,48 +787,8 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                 )}
               </CardContent>
             </Card>
-          </TabsContent>
-
-          <TabsContent value="admins">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Admin Management
-                </CardTitle>
-                <CardDescription>
-                  Manage admin accounts and permissions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Full Name</TableHead>
-                      <TableHead>Username</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {admins.map((adminItem) => (
-                      <TableRow key={adminItem.id}>
-                        <TableCell className="font-medium">{adminItem.full_name}</TableCell>
-                        <TableCell>{adminItem.username}</TableCell>
-                        <TableCell>{adminItem.email}</TableCell>
-                        <TableCell>{new Date(adminItem.created_at).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">Admin</Badge>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
       </div>
     </div>
   )
