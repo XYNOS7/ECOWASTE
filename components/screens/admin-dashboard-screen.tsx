@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -479,9 +480,8 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Navigation Tabs */}
-        {/* Navigation Tabs */}
         <Tabs defaultValue="reports" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="reports" onClick={() => setActiveTab("reports")}>Waste Reports</TabsTrigger>
             <TabsTrigger value="users" onClick={() => setActiveTab("users")}>Users</TabsTrigger>
             <TabsTrigger value="admins">Admin Management</TabsTrigger>
@@ -527,268 +527,266 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
             </Card>
           </TabsContent>
 
-          <>
-        {/* Users Management Section */}
-        {activeTab === "users" && (
-          <div className="space-y-6">
-            {/* User Management Header */}
-            <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <Users className="w-8 h-8" />
-                    <div>
-                      <h2 className="text-2xl font-bold">User Management</h2>
-                      <p className="text-green-100">Manage user accounts and permissions</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-3xl font-bold">{users.length}</p>
-                    <p className="text-green-100 text-sm">Total Users</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Search Users */}
-            <Card>
-              <CardContent className="p-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    placeholder="Search users..."
-                    value={userSearchTerm}
-                    onChange={(e) => setUserSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Users Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5" />
-                  Users ({filteredUsers.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Username</TableHead>
-                          <TableHead>Email</TableHead>
-                          <TableHead>Eco Coins</TableHead>
-                          <TableHead>Reports</TableHead>
-                          <TableHead>Level</TableHead>
-                          <TableHead>Joined</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredUsers.map((userItem) => (
-                          <TableRow key={userItem.id}>
-                            <TableCell className="font-medium">
-                              {userItem.full_name || 'N/A'}
-                            </TableCell>
-                            <TableCell>{userItem.username || 'N/A'}</TableCell>
-                            <TableCell>{userItem.email}</TableCell>
-                            <TableCell>
-                              <Badge variant="secondary">
-                                {userItem.eco_coins || 0}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {userItem.total_reports || 0}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="default">
-                                Level {userItem.level || 1}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              {new Date(userItem.created_at).toLocaleDateString()}
-                            </TableCell>
-                            <TableCell>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                disabled={loading}
-                                onClick={() => deleteUser(userItem.id, userItem.email)}
-                                className="hover:bg-red-600"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    {filteredUsers.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        No users found matching your search.
+          <TabsContent value="users">
+            <div className="space-y-6">
+              {/* User Management Header */}
+              <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white border-0">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Users className="w-8 h-8" />
+                      <div>
+                        <h2 className="text-2xl font-bold">User Management</h2>
+                        <p className="text-green-100">Manage user accounts and permissions</p>
                       </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* Reports Management Section */}
-        {activeTab === "reports" && (
-          <div className="space-y-6">
-            {/* Filters */}
-            <Card className="mb-6">
-              <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <Input
-                        placeholder="Search reports, users, descriptions..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
+                    </div>
+                    <div className="text-right">
+                      <p className="text-3xl font-bold">{users.length}</p>
+                      <p className="text-green-100 text-sm">Total Users</p>
                     </div>
                   </div>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
-                    <SelectTrigger className="w-full md:w-48">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Status</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="reported">Reported</SelectItem>
-                      <SelectItem value="in-progress">In Progress</SelectItem>
-                      <SelectItem value="waiting">Waiting</SelectItem>
-                      <SelectItem value="completed">Completed</SelectItem>
-                      <SelectItem value="collected">Collected</SelectItem>
-                      <SelectItem value="cleaned">Cleaned</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger className="w-full md:w-48">
-                      <SelectValue placeholder="Filter by type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="waste">Waste Reports</SelectItem>
-                      <SelectItem value="dirty-area">Dirty Area Reports</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
 
-            {/* Reports Table */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Filter className="w-5 h-5" />
-                  Reports ({filteredReports.length})
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loading ? (
-                  <div className="flex justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+              {/* Search Users */}
+              <Card>
+                <CardContent className="p-6">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      placeholder="Search users..."
+                      value={userSearchTerm}
+                      onChange={(e) => setUserSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
                   </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Title</TableHead>
-                          <TableHead>User</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filteredReports.map((report) => {
-                          const nextStatus = getNextStatus(report.status, report.type)
-                          const actionText = getActionButtonText(report.status)
+                </CardContent>
+              </Card>
 
-                          return (
-                            <TableRow key={`${report.type}-${report.id}`}>
-                              <TableCell>
-                                <Badge variant={report.type === 'waste' ? 'default' : 'secondary'}>
-                                  {report.type === 'waste' ? 'Waste' : 'Dirty Area'}
-                                </Badge>
-                              </TableCell>
+              {/* Users Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="w-5 h-5" />
+                    Users ({filteredUsers.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="flex justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Username</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Eco Coins</TableHead>
+                            <TableHead>Reports</TableHead>
+                            <TableHead>Level</TableHead>
+                            <TableHead>Joined</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredUsers.map((userItem) => (
+                            <TableRow key={userItem.id}>
                               <TableCell className="font-medium">
-                                {report.title}
+                                {userItem.full_name || 'N/A'}
                               </TableCell>
+                              <TableCell>{userItem.username || 'N/A'}</TableCell>
+                              <TableCell>{userItem.email}</TableCell>
                               <TableCell>
-                                {report.profiles?.username || 'Unknown User'}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={getStatusBadgeVariant(report.status)} className={getStatusColor(report.status)}>
-                                  {report.status}
+                                <Badge variant="secondary">
+                                  {userItem.eco_coins || 0}
                                 </Badge>
                               </TableCell>
                               <TableCell>
-                                {'category' in report ? report.category : 'N/A'}
+                                <Badge variant="outline">
+                                  {userItem.total_reports || 0}
+                                </Badge>
                               </TableCell>
                               <TableCell>
-                                {new Date(report.created_at).toLocaleDateString()}
+                                <Badge variant="default">
+                                  Level {userItem.level || 1}
+                                </Badge>
                               </TableCell>
                               <TableCell>
-                                <div className="flex items-center gap-2">
-                                  {nextStatus && actionText && (
+                                {new Date(userItem.created_at).toLocaleDateString()}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  disabled={loading}
+                                  onClick={() => deleteUser(userItem.id, userItem.email)}
+                                  className="hover:bg-red-600"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      {filteredUsers.length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          No users found matching your search.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="reports">
+            <div className="space-y-6">
+              {/* Filters */}
+              <Card className="mb-6">
+                <CardContent className="p-6">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="flex-1">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                        <Input
+                          placeholder="Search reports, users, descriptions..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                    </div>
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-full md:w-48">
+                        <SelectValue placeholder="Filter by status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="reported">Reported</SelectItem>
+                        <SelectItem value="in-progress">In Progress</SelectItem>
+                        <SelectItem value="waiting">Waiting</SelectItem>
+                        <SelectItem value="completed">Completed</SelectItem>
+                        <SelectItem value="collected">Collected</SelectItem>
+                        <SelectItem value="cleaned">Cleaned</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Select value={typeFilter} onValueChange={setTypeFilter}>
+                      <SelectTrigger className="w-full md:w-48">
+                        <SelectValue placeholder="Filter by type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Types</SelectItem>
+                        <SelectItem value="waste">Waste Reports</SelectItem>
+                        <SelectItem value="dirty-area">Dirty Area Reports</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Reports Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Filter className="w-5 h-5" />
+                    Reports ({filteredReports.length})
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loading ? (
+                    <div className="flex justify-center py-8">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Title</TableHead>
+                            <TableHead>User</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Date</TableHead>
+                            <TableHead>Actions</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredReports.map((report) => {
+                            const nextStatus = getNextStatus(report.status, report.type)
+                            const actionText = getActionButtonText(report.status)
+
+                            return (
+                              <TableRow key={`${report.type}-${report.id}`}>
+                                <TableCell>
+                                  <Badge variant={report.type === 'waste' ? 'default' : 'secondary'}>
+                                    {report.type === 'waste' ? 'Waste' : 'Dirty Area'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                  {report.title}
+                                </TableCell>
+                                <TableCell>
+                                  {report.profiles?.username || 'Unknown User'}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={getStatusBadgeVariant(report.status)} className={getStatusColor(report.status)}>
+                                    {report.status}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>
+                                  {'category' in report ? report.category : 'N/A'}
+                                </TableCell>
+                                <TableCell>
+                                  {new Date(report.created_at).toLocaleDateString()}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    {nextStatus && actionText && (
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={loading}
+                                        onClick={() => updateReportStatus(report.id, nextStatus, report.type)}
+                                      >
+                                        <CheckCircle className="w-4 h-4 mr-1" />
+                                        {actionText}
+                                      </Button>
+                                    )}
                                     <Button
                                       size="sm"
                                       variant="outline"
+                                      className="text-red-600 hover:text-red-700"
                                       disabled={loading}
-                                      onClick={() => updateReportStatus(report.id, nextStatus, report.type)}
+                                      onClick={() => deleteReport(report.id, report.type)}
                                     >
-                                      <CheckCircle className="w-4 h-4 mr-1" />
-                                      {actionText}
+                                      <Trash2 className="w-4 h-4" />
                                     </Button>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-red-600 hover:text-red-700"
-                                    disabled={loading}
-                                    onClick={() => deleteReport(report.id, report.type)}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          )
-                        })}
-                      </TableBody>
-                    </Table>
-                    {filteredReports.length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
-                        No reports found matching your filters.
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-        )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            )
+                          })}
+                        </TableBody>
+                      </Table>
+                      {filteredReports.length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                          No reports found matching your filters.
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )
