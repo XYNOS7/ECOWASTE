@@ -725,7 +725,12 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                             </p>
                           </div>
                         </div>
-                        <Button variant="default" size="sm" className="border-white/30 text-white hover:bg-white/10">
+                        <Button 
+                          variant="default" 
+                          size="sm" 
+                          className="border-white/30 text-white hover:bg-white/10"
+                          onClick={() => setActiveTab("reports")}
+                        >
                           View Report
                         </Button>
                       </div>
@@ -1146,6 +1151,11 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                             variant="default" 
                             size="sm"
                             className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200"
+                            onClick={() => {
+                              // Scroll to top of reports section
+                              window.scrollTo({ top: 0, behavior: 'smooth' })
+                              // You could also implement a modal or detailed view here
+                            }}
                           >
                             View Report
                           </Button>
