@@ -85,11 +85,6 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
     }
   }, [user])
 
-  // Debug effect to check admins state
-  useEffect(() => {
-    console.log("Admins state updated:", admins)
-  }, [admins])
-
   const loadUsers = async () => {
     try {
       const { data, error } = await database.profiles.getLeaderboard(1000)
@@ -111,27 +106,31 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
 
   const loadAdmins = async () => {
     try {
-      console.log("Starting to load admins...")
       const { data, error } = await database.admins.getAll()
       if (error) {
         console.error("Error loading admins:", error)
-        toast({
-          title: "Error",
-          description: "Failed to load admin data",
-          variant: "destructive",
-        })
-      } else {
-        console.log("Loaded admins:", data) // Debug log
-        console.log("Setting admins state with:", data)
-        setAdmins(data || [])
+        // Only show toast if it's not a network error that might resolve itself
+        if (!error.message?.includes('Failed to fetch')) {
+          toast({
+            title: "Error",
+            description: "Failed to load admin data",
+            variant: "destructive",
+          })
+        }
+      } else if (data) {
+        console.log("Loaded admins:", data.length, "admins")
+        setAdmins(data)
       }
     } catch (error) {
       console.error("Exception loading admins:", error)
-      toast({
-        title: "Error",
-        description: "Failed to load admin data",
-        variant: "destructive",
-      })
+      // Only show toast for non-network errors
+      if (!error.message?.includes('Failed to fetch')) {
+        toast({
+          title: "Error", 
+          description: "Failed to load admin data",
+          variant: "destructive",
+        })
+      }
     }
   }
 
@@ -222,7 +221,10 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
     // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       fetchDashboardStats()
-      loadAdmins() // Also refresh admins periodically
+      // Only refresh admins if we're on the settings tab to avoid unnecessary calls
+      if (activeTab === "settings") {
+        loadAdmins()
+      }
     }, 30000)
 
     return () => {
@@ -923,7 +925,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
               ) : admins.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="w-12 h-12 mx-auto text-purple-200 mb-3" />
-                  <p className="text-purple-100">Loading admin accounts...</p>
+                  <p className="text-purple-100">No admin accounts found</p>
                   <Button 
                     variant="outline" 
                     size="sm" 
