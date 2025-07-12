@@ -84,6 +84,11 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
     }
   }, [user])
 
+  // Debug effect to check admins state
+  useEffect(() => {
+    console.log("Admins state updated:", admins)
+  }, [admins])
+
   const loadUsers = async () => {
     try {
       const { data, error } = await database.profiles.getLeaderboard(1000)
@@ -108,6 +113,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
     if (error) {
       console.error("Error loading admins:", error)
     } else {
+      console.log("Loaded admins:", data) // Debug log
       setAdmins(data || [])
     }
   }

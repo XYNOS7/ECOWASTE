@@ -65,10 +65,17 @@ export const database = {
 
     async getAll() {
       try {
+        console.log("Fetching all admins from database...")
         const { data, error } = await supabase
           .from("admins")
           .select("*")
           .order("created_at", { ascending: false })
+
+        console.log("Admin query result:", { data, error, count: data?.length })
+        
+        if (error) {
+          console.error("Supabase error fetching admins:", error)
+        }
 
         return { data, error }
       } catch (err) {
