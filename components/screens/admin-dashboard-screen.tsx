@@ -78,9 +78,10 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
     if (user) {
       loadAdminData()
       fetchReports()
-      loadAdmins()
       loadUsers()
       fetchDashboardStats()
+      // Load admins separately to ensure it's not interfering with other calls
+      loadAdmins()
     }
   }, [user])
 
@@ -109,12 +110,28 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
   }
 
   const loadAdmins = async () => {
-    const { data, error } = await database.admins.getAll()
-    if (error) {
-      console.error("Error loading admins:", error)
-    } else {
-      console.log("Loaded admins:", data) // Debug log
-      setAdmins(data || [])
+    try {
+      console.log("Starting to load admins...")
+      const { data, error } = await database.admins.getAll()
+      if (error) {
+        console.error("Error loading admins:", error)
+        toast({
+          title: "Error",
+          description: "Failed to load admin data",
+          variant: "destructive",
+        })
+      } else {
+        console.log("Loaded admins:", data) // Debug log
+        console.log("Setting admins state with:", data)
+        setAdmins(data || [])
+      }
+    } catch (error) {
+      console.error("Exception loading admins:", error)
+      toast({
+        title: "Error",
+        description: "Failed to load admin data",
+        variant: "destructive",
+      })
     }
   }
 
@@ -193,14 +210,25 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       })
       .subscribe()
 
+    // Add real-time subscription for admin table changes
+    const adminSubscription = supabase
+      .channel('admin_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admins' }, () => {
+        console.log("Admin table changed, reloading admins...")
+        loadAdmins()
+      })
+      .subscribe()
+
     // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
       fetchDashboardStats()
+      loadAdmins() // Also refresh admins periodically
     }, 30000)
 
     return () => {
       wasteReportsSubscription.unsubscribe()
       dirtyAreaSubscription.unsubscribe()
+      adminSubscription.unsubscribe()
       clearInterval(interval)
     }
   }, [])
@@ -892,6 +920,19 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                 <div className="flex justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
                 </div>
+              ) : admins.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="w-12 h-12 mx-auto text-purple-200 mb-3" />
+                  <p className="text-purple-100">Loading admin accounts...</p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2 border-white/30 text-white hover:bg-white/10"
+                    onClick={loadAdmins}
+                  >
+                    Refresh Admins
+                  </Button>
+                </div>
               ) : (
                 <div className="space-y-3">
                   {admins.map((adminItem, index) => (
@@ -937,13 +978,6 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                       </div>
                     </motion.div>
                   ))}
-                  
-                  {admins.length === 0 && (
-                    <div className="text-center py-8">
-                      <Users className="w-12 h-12 mx-auto text-purple-200 mb-3" />
-                      <p className="text-purple-100">No admin accounts found</p>
-                    </div>
-                  )}
                 </div>
               )}
             </CardContent>
