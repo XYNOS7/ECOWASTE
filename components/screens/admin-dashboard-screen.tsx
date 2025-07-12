@@ -1,4 +1,3 @@
-
 "use client"
 
 import React, { useState, useEffect } from "react"
@@ -307,7 +306,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
   const updateReportStatus = async (reportId: string, newStatus: string, reportType: 'waste' | 'dirty-area') => {
     try {
       setLoading(true)
-      
+
       let result
       if (reportType === 'waste') {
         result = await database.wasteReports.updateStatus(reportId, newStatus as any)
@@ -456,7 +455,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
 
       // Delete auth user (this will cascade delete everything else)
       const { error: authError } = await supabase.auth.admin.deleteUser(userId)
-      
+
       if (authError) {
         console.error('Error deleting auth user:', authError)
         // Still continue if profile deletion worked
@@ -464,7 +463,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
 
       // Update local state
       setUsers(prevUsers => prevUsers.filter(u => u.id !== userId))
-      
+
       toast({
         title: "Success",
         description: `User ${userName} and all their data has been permanently deleted`,
@@ -726,7 +725,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                             </p>
                           </div>
                         </div>
-                        <Button variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10">
+                        <Button variant="default" size="sm" className="border-white/30 text-white hover:bg-white/10">
                           View Report
                         </Button>
                       </div>
@@ -874,7 +873,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                   </div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3">
                   <div className="flex items-center gap-2 text-blue-100 text-sm">
@@ -917,7 +916,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                   className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-purple-200"
                 />
               </div>
-              
+
               {loading ? (
                 <div className="flex justify-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
@@ -1073,7 +1072,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
               </CardTitle>
             </CardHeader>
             <CardContent>
-            
+
                 {loading ? (
                   <div className="flex justify-center py-8">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -1096,7 +1095,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                         {filteredReports.map((report) => {
                           const nextStatus = getNextStatus(report.status, report.type)
                           const actionText = getActionButtonText(report.status)
-                          
+
                           return (
                             <TableRow key={`${report.type}-${report.id}`}>
                               <TableCell>
@@ -1143,6 +1142,13 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
+                                  <Button 
+                            variant="default" 
+                            size="sm"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200"
+                          >
+                            View Report
+                          </Button>
                                 </div>
                               </TableCell>
                             </TableRow>
