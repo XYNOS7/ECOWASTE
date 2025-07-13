@@ -17,8 +17,9 @@ import { LoadingFallback } from "@/components/loading-fallback"
 import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { database } from "@/lib/database"
+import { EcoTipsScreen } from "@/components/screens/eco-tips-screen"
 
-export type Screen = "home" | "report-waste" | "map" | "leaderboard" | "rewards" | "settings" | "auth" | "admin-login" | "admin-dashboard"
+export type Screen = "home" | "report-waste" | "map" | "leaderboard" | "rewards" | "settings" | "auth" | "admin-login" | "admin-dashboard" | "eco-tips"
 
 function EcoTrackAppContent() {
   const { user, profile, loading, refreshProfile, signOut } = useAuth()
@@ -166,7 +167,15 @@ function EcoTrackAppContent() {
       case "rewards":
         return <RewardsScreen profile={profile} />
       case "settings":
-        return <SettingsScreen />
+        return <SettingsScreen profile={profile} onSignOut={signOut} />
+      case "eco-tips":
+        return <EcoTipsScreen onNavigate={setCurrentScreen} />
+      case "auth":
+        return <AuthScreen />
+      case "admin-login":
+        return <AdminLoginScreen onNavigate={setCurrentScreen} />
+      case "admin-dashboard":
+        return <AdminDashboardScreen onNavigate={setCurrentScreen} />
       default:
         return <HomeScreen profile={profile} onNavigate={setCurrentScreen} />
     }
