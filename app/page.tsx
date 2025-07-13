@@ -18,7 +18,7 @@ import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { database } from "@/lib/database"
 
-export type Screen = "home" | "report-waste" | "map" | "leaderboard" | "rewards" | "settings" | "auth" | "admin-login" | "admin-dashboard"
+export type Screen = "home" | "report-waste" | "map" | "leaderboard" | "rewards" | "settings" | "auth" | "admin-login" | "admin-dashboard" | "eco-tips"
 
 function EcoTrackAppContent() {
   const { user, profile, loading, refreshProfile, signOut } = useAuth()
@@ -165,8 +165,10 @@ function EcoTrackAppContent() {
         return <LeaderboardScreen profile={profile} />
       case "rewards":
         return <RewardsScreen profile={profile} />
+      case "eco-tips":
+        return <EcoTipsScreen />
       case "settings":
-        return <SettingsScreen />
+        return <SettingsScreen profile={profile} onSignOut={signOut} onNavigate={setCurrentScreen} />
       default:
         return <HomeScreen profile={profile} onNavigate={setCurrentScreen} />
     }
@@ -250,4 +252,14 @@ export default function EcoTrackApp() {
     </Suspense>
   )
 
+}
+
+// EcoTipsScreen component (add the actual implementation here)
+function EcoTipsScreen() {
+    return (
+        <div>
+            <h1>EcoTips</h1>
+            <p>Here you can find helpful tips to live a more sustainable life.</p>
+        </div>
+    );
 }

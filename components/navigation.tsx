@@ -1,7 +1,7 @@
 "use client"
 
 import { motion } from "framer-motion"
-import { Home, MapPin, Gift, Settings, Camera } from "lucide-react"
+import { Home, MapPin, Gift, Settings, Camera, Lightbulb } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { Screen } from "@/app/page"
 
@@ -12,9 +12,10 @@ interface NavigationProps {
 
 const navItems = [
   { id: "home" as Screen, icon: Home, label: "Home" },
-  { id: "map" as Screen, icon: MapPin, label: "Map" },
   { id: "report-waste" as Screen, icon: Camera, label: "Camera", isCamera: true },
+  { id: "map" as Screen, icon: MapPin, label: "Map" },
   { id: "rewards" as Screen, icon: Gift, label: "Rewards" },
+  { id: "eco-tips" as Screen, icon: Lightbulb, label: "EcoTips" },
   { id: "settings" as Screen, icon: Settings, label: "Settings" },
 ]
 
