@@ -193,14 +193,14 @@ export function LeaderboardScreen({ profile }: LeaderboardScreenProps) {
                   </Avatar>
 
                   <div className="flex-1">
-                    <p className={`font-medium ${user.isCurrentUser ? "text-primary" : ""}`}>
+                    <div className={`font-medium ${user.isCurrentUser ? "text-primary" : ""}`}>
                       {user.username || "Anonymous"}
                       {user.isCurrentUser && (
                         <Badge variant="secondary" className="ml-2 text-xs">
                           You
                         </Badge>
                       )}
-                    </p>
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       {user.total_reports} reports • Level {Math.floor(user.total_reports / 10) + 1}
                     </p>
