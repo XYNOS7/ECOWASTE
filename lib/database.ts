@@ -233,7 +233,7 @@ export const database = {
     async updateStatus(reportId: string, status: WasteReport["status"]) {
       try {
         console.log('Updating waste report:', { reportId, status })
-        
+
         // First, check if the report exists
         const { data: existingReport, error: checkError } = await supabase
           .from("waste_reports")
@@ -258,7 +258,7 @@ export const database = {
           status, 
           updated_at: new Date().toISOString() 
         }
-        
+
         if (status === 'completed' || status === 'collected') {
           updateData.coins_earned = 10 // Award coins when completed
         }
@@ -365,7 +365,7 @@ export const database = {
     updateStatus: async (reportId: string, status: 'pending' | 'reported' | 'in-progress' | 'waiting' | 'cleaned' | 'completed') => {
       try {
         console.log('Updating dirty area report:', { reportId, status })
-        
+
         // First, check if the report exists
         const { data: existingReport, error: checkError } = await supabase
           .from('dirty_area_reports')
@@ -390,7 +390,7 @@ export const database = {
           status, 
           updated_at: new Date().toISOString() 
         }
-        
+
         if (status === 'completed' || status === 'cleaned') {
           updateData.coins_earned = 15 // Award coins when completed
         }
@@ -430,7 +430,6 @@ export const database = {
         const { data, error } = await supabase
           .from("rewards")
           .select("*")
-          .eq("is_available", true)
           .order("cost", { ascending: true })
 
         return { data, error }
@@ -442,10 +441,59 @@ export const database = {
 
     async redeem(userId: string, rewardId: string) {
       try {
-        const { data, error } = await supabase.rpc("redeem_reward", {
-          user_uuid: userId,
-          reward_uuid: rewardId,
-        })
+        // First check if user has enough coins and reward exists
+        const { data: reward } = await supabase
+          .from("rewards")
+          .select("cost, is_available")
+          .eq("id", rewardId)
+          .single()
+
+        if (!reward || !reward.is_available) {
+          return { data: null, error: { message: "Reward not available" } }
+        }
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("eco_coins")
+          .eq("id", userId)
+          .single()
+
+        if (!profile || profile.eco_coins < reward.cost) {
+          return { data: null, error: { message: "Insufficient coins" } }
+        }
+
+        // Check if already redeemed
+        const { data: existingReward } = await supabase
+          .from("user_rewards")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("reward_id", rewardId)
+          .single()
+
+        if (existingReward) {
+          return { data: null, error: { message: "Reward already redeemed" } }
+        }
+
+        // Deduct coins from user
+        const { error: updateError } = await supabase
+          .from("profiles")
+          .update({ eco_coins: profile.eco_coins - reward.cost })
+          .eq("id", userId)
+
+        if (updateError) {
+          return { data: null, error: updateError }
+        }
+
+        // Add to user rewards
+        const { data, error } = await supabase
+          .from("user_rewards")
+          .insert({
+            user_id: userId,
+            reward_id: rewardId,
+            status: 'redeemed'
+          })
+          .select()
+          .single()
 
         return { data, error }
       } catch (err) {
