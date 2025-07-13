@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS dirty_area_reports (
 -- Create rewards table
 CREATE TABLE IF NOT EXISTS rewards (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  title TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
   description TEXT,
   cost INTEGER NOT NULL,
   category TEXT NOT NULL,

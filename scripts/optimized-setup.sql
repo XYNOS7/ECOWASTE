@@ -159,28 +159,12 @@ CREATE POLICY "activity_logs_policy" ON activity_logs USING (auth.uid() = user_i
 -- 6. INSERT SAMPLE DATA
 -- =============================================
 
--- Add unique constraint to prevent duplicate rewards
-ALTER TABLE rewards ADD CONSTRAINT unique_reward_title UNIQUE (title) ON CONFLICT DO NOTHING;
-
--- Clean up any existing duplicate rewards (keep only the first occurrence)
-DELETE FROM rewards 
-WHERE id NOT IN (
-  SELECT DISTINCT ON (title) id 
-  FROM rewards 
-  ORDER BY title, created_at
-);
-
--- Insert sample rewards with more variety
+-- Insert sample rewards
 INSERT INTO rewards (title, description, cost, category, image_url, is_available) VALUES
-('Coffee Voucher', 'Free coffee at partner cafes', 120, 'Food & Drink', '/placeholder.svg?height=80&width=80', true),
-('Movie Discount', '10% off movie tickets', 100, 'Entertainment', '/placeholder.svg?height=80&width=80', true),
-('Plant Sapling', 'Free tree sapling for planting', 80, 'Environment', '/placeholder.svg?height=80&width=80', true),
-('Pizza Slice', 'Free pizza slice voucher', 150, 'Food & Drink', '/placeholder.svg?height=80&width=80', true),
-('Book Voucher', '₹200 off on books', 200, 'Shopping', '/placeholder.svg?height=80&width=80', true),
-('Eco Bag', 'Reusable eco-friendly bag', 90, 'Environment', '/placeholder.svg?height=80&width=80', true),
-('Ice Cream', 'Free ice cream cone', 60, 'Food & Drink', '/placeholder.svg?height=80&width=80', true),
-('Bus Pass', 'One-day public transport pass', 180, 'Environment', '/placeholder.svg?height=80&width=80', true)
-ON CONFLICT (title) DO NOTHING;
+('Coffee Voucher', 'Free coffee', 120, 'Food & Drink', '/placeholder.svg?height=80&width=80', true),
+('Movie Discount', '10% off movie ticket', 100, 'Entertainment', '/placeholder.svg?height=80&width=80', true),
+('Plant Sapling', 'Free tree sapling', 80, 'Environment', '/placeholder.svg?height=80&width=80', true)
+ON CONFLICT DO NOTHING;
 
 -- Insert sample achievements
 INSERT INTO achievements (title, description, icon, condition_type, condition_value, coins_reward) VALUES

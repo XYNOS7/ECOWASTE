@@ -55,7 +55,7 @@ export function HomeScreen({ profile, onNavigate }: HomeScreenProps) {
       description: "Learn sustainability",
       icon: Lightbulb,
       color: "bg-purple-500",
-      action: () => onNavigate("eco-tips"),
+      action: () => {},
     },
   ]
 
