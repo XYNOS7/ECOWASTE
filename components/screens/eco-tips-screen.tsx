@@ -202,7 +202,7 @@ export function EcoTipsScreen() {
         throw new Error("Gemini API not configured")
       }
 
-      const model = genAI.getGenerativeModel({ model: "gemini-pro" })
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
 
       const prompt = query 
         ? `Generate 3 specific eco-friendly tips related to: "${query}". Format each tip as JSON with fields: title, description, category (choose from: Daily Habits, Energy, Waste, Transportation, Food, Home), difficulty (Easy/Medium/Hard), impact (Low/Medium/High), and savings (optional benefit text). Make them practical and actionable.`
