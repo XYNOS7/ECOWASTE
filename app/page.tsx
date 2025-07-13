@@ -17,6 +17,7 @@ import { LoadingFallback } from "@/components/loading-fallback"
 import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { database } from "@/lib/database"
+import { EcoTipsScreen } from "@/components/screens/eco-tips-screen"
 
 export type Screen = "home" | "report-waste" | "map" | "leaderboard" | "rewards" | "settings" | "auth" | "admin-login" | "admin-dashboard" | "eco-tips"
 
@@ -252,14 +253,4 @@ export default function EcoTrackApp() {
     </Suspense>
   )
 
-}
-
-// EcoTipsScreen component (add the actual implementation here)
-function EcoTipsScreen() {
-    return (
-        <div>
-            <h1>EcoTips</h1>
-            <p>Here you can find helpful tips to live a more sustainable life.</p>
-        </div>
-    );
 }
