@@ -223,7 +223,25 @@ export function MapScreen() {
                         )}
                       </div>
                     </div>
-                    <Button variant="ghost" size="icon">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => {
+                        if (report.location_lat && report.location_lng) {
+                          // Open Google Maps with the specific coordinates
+                          const mapsUrl = `https://www.google.com/maps?q=${report.location_lat},${report.location_lng}`
+                          window.open(mapsUrl, '_blank')
+                        } else if (report.location_address) {
+                          // Fallback to address search if coordinates are not available
+                          const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(report.location_address)}`
+                          window.open(mapsUrl, '_blank')
+                        } else {
+                          // Show alert if no location data is available
+                          alert('Location data not available for this report')
+                        }
+                      }}
+                      title="Open in Google Maps"
+                    >
                       <Navigation className="w-4 h-4" />
                     </Button>
                   </div>
