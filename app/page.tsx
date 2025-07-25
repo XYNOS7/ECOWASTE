@@ -18,8 +18,10 @@ import { useAuth } from "@/hooks/use-auth"
 import { useToast } from "@/hooks/use-toast"
 import { database } from "@/lib/database"
 import { EcoTipsScreen } from "@/components/screens/eco-tips-screen"
+import { PickupAgentLoginScreen } from "@/components/screens/pickup-agent-login-screen" // Assuming this component exists
+import { PickupAgentDashboardScreen } from "@/components/screens/pickup-agent-dashboard-screen" // Assuming this component exists
 
-export type Screen = "home" | "report-waste" | "map" | "leaderboard" | "rewards" | "settings" | "auth" | "admin-login" | "admin-dashboard" | "eco-tips"
+export type Screen = "home" | "report-waste" | "map" | "leaderboard" | "rewards" | "settings" | "auth" | "admin-login" | "admin-dashboard" | "eco-tips" | "pickup-agent-login" | "pickup-agent-dashboard"
 
 function EcoTrackAppContent() {
   const { user, profile, loading, refreshProfile, signOut } = useAuth()
@@ -28,6 +30,7 @@ function EcoTrackAppContent() {
   const [newAchievement, setNewAchievement] = useState<any>(null)
   const { toast } = useToast()
   const [isAdminMode, setIsAdminMode] = useState(false)
+  const [pickupAgent, setPickupAgent] = useState<any>(null)
 
   const screenVariants = {
     initial: { opacity: 0, x: 20 },
@@ -124,10 +127,12 @@ function EcoTrackAppContent() {
       await signOut()
       setCurrentScreen("auth")
       setIsAdminMode(false)
+      setPickupAgent(null)
     } catch (error) {
       console.error("Sign out error:", error)
       setCurrentScreen("auth")
       setIsAdminMode(false)
+      setPickupAgent(null)
     }
   }
 
@@ -145,6 +150,16 @@ function EcoTrackAppContent() {
       setIsAdminMode(false)
       setCurrentScreen("home")
     }
+  }
+
+  const handlePickupAgentLogin = (agent: any) => {
+    setPickupAgent(agent)
+    setCurrentScreen("pickup-agent-dashboard")
+  }
+
+  const handlePickupAgentSignOut = () => {
+    setPickupAgent(null)
+    setCurrentScreen("auth")
   }
 
   const handleBackToUser = () => {
@@ -178,8 +193,8 @@ function EcoTrackAppContent() {
     return <LoadingFallback />
   }
 
-  // Show auth screen if not authenticated (unless in admin mode)
-  if (!user || (!profile && !isAdminMode)) {
+  // Show auth screen if not authenticated (unless in admin mode or pickup agent mode)
+  if ((!user && !pickupAgent) || (!profile && !isAdminMode)) {
     if (currentScreen === "admin-login") {
       return (
         <AdminLoginScreen 
@@ -188,10 +203,21 @@ function EcoTrackAppContent() {
         />
       )
     }
+
+    if (currentScreen === "pickup-agent-login") {
+      return (
+        <PickupAgentLoginScreen 
+          onPickupAgentLogin={handlePickupAgentLogin}
+          onBackToUser={() => setCurrentScreen("auth")}
+        />
+      )
+    }
+
     return (
       <AuthScreen 
         onAuthSuccess={() => setCurrentScreen("home")}
         onAdminLogin={() => setCurrentScreen("admin-login")}
+        onPickupAgentLogin={() => setCurrentScreen("pickup-agent-login")}
       />
     )
   }
@@ -199,6 +225,16 @@ function EcoTrackAppContent() {
   // Show admin dashboard if in admin mode
   if (isAdminMode && currentScreen === "admin-dashboard") {
     return <AdminDashboardScreen onSignOut={handleAdminSignOut} />
+  }
+
+  // Show pickup agent dashboard if logged in as pickup agent
+  if (pickupAgent && currentScreen === "pickup-agent-dashboard") {
+    return (
+      <PickupAgentDashboardScreen 
+        agent={pickupAgent}
+        onSignOut={handlePickupAgentSignOut}
+      />
+    )
   }
 
   return (

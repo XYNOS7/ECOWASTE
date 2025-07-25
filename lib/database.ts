@@ -11,6 +11,94 @@ export interface Admin {
 }
 
 export const database = {
+  // Pickup Agents operations
+  pickupAgents: {
+    async create(agent: any): Promise<{ data: any; error: any }> {
+      try {
+        const { data, error } = await supabase
+          .from("pickup_agents")
+          .insert(agent)
+          .select()
+          .single()
+
+        return { data, error }
+      } catch (err) {
+        console.error("Database pickup agent create error:", err)
+        return { data: null, error: err }
+      }
+    },
+
+    async getByPhoneNumber(phoneNumber: string): Promise<{ data: any; error: any }> {
+      try {
+        const { data, error } = await supabase
+          .from("pickup_agents")
+          .select("*")
+          .eq("phone_number", phoneNumber)
+          .eq("is_active", true)
+          .maybeSingle()
+
+        return { data, error }
+      } catch (err) {
+        console.error("Database pickup agent getByPhoneNumber error:", err)
+        return { data: null, error: err }
+      }
+    },
+
+    async getTasks(agentId: string) {
+      try {
+        const { data, error } = await supabase
+          .from("collection_tasks")
+          .select(`
+            *,
+            waste_report:waste_reports(
+              id,
+              title,
+              description,
+              category,
+              location_address,
+              location_lat,
+              location_lng,
+              user_id,
+              profiles:user_id(username)
+            )
+          `)
+          .eq("pickup_agent_id", agentId)
+          .order("created_at", { ascending: false })
+
+        return { data, error }
+      } catch (err) {
+        console.error("Database pickup agent getTasks error:", err)
+        return { data: [], error: err }
+      }
+    },
+
+    async updateTaskStatus(taskId: string, status: string) {
+      try {
+        const updateData: any = { 
+          status, 
+          updated_at: new Date().toISOString() 
+        }
+
+        if (status === 'in_progress') {
+          updateData.started_at = new Date().toISOString()
+        } else if (status === 'completed') {
+          updateData.completed_at = new Date().toISOString()
+        }
+
+        const { data, error } = await supabase
+          .from("collection_tasks")
+          .update(updateData)
+          .eq("id", taskId)
+          .select()
+
+        return { data, error }
+      } catch (err) {
+        console.error("Database pickup agent updateTaskStatus error:", err)
+        return { data: null, error: err }
+      }
+    },
+  },
+
   // Admin operations
   admins: {
     async get(adminId: string): Promise<Admin | null> {

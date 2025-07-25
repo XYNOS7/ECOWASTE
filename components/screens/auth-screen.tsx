@@ -163,9 +163,12 @@ export function AuthScreen({ onAuthSuccess, onAdminLogin }: AuthScreenProps) {
                 </Button>
               </div>
               {onAdminLogin && (
-                <div>
+                <div className="flex flex-col space-y-2">
                   <Button variant="link" className="p-0 h-auto font-normal text-slate-600" onClick={onAdminLogin}>
                     Admin Login
+                  </Button>
+                  <Button variant="link" className="p-0 h-auto font-normal text-orange-600" onClick={() => window.location.href = '#pickup-agent'}>
+                    Pickup Agent Login
                   </Button>
                 </div>
               )}
