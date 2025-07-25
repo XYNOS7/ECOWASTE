@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, Suspense } from "react"
+import React, { useState, Suspense } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Navigation } from "@/components/navigation"
 import { HomeScreen } from "@/components/screens/home-screen"
@@ -31,6 +31,21 @@ function EcoTrackAppContent() {
   const { toast } = useToast()
   const [isAdminMode, setIsAdminMode] = useState(false)
   const [pickupAgent, setPickupAgent] = useState<any>(null)
+
+  // Listen for hash changes to navigate to pickup agent login
+  React.useEffect(() => {
+    const handleHashChange = () => {
+      if (window.location.hash === '#pickup-agent-login') {
+        setCurrentScreen('pickup-agent-login')
+        window.location.hash = '' // Clear the hash
+      }
+    }
+    
+    window.addEventListener('hashchange', handleHashChange)
+    handleHashChange() // Check on mount
+    
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
 
   const screenVariants = {
     initial: { opacity: 0, x: 20 },
@@ -217,7 +232,6 @@ function EcoTrackAppContent() {
       <AuthScreen 
         onAuthSuccess={() => setCurrentScreen("home")}
         onAdminLogin={() => setCurrentScreen("admin-login")}
-        onPickupAgentLogin={() => setCurrentScreen("pickup-agent-login")}
       />
     )
   }
