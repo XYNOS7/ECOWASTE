@@ -27,6 +27,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { database } from "@/lib/database"
+import { supabase } from "@/lib/supabase"
 
 interface PickupAgentDashboardScreenProps {
   agent: any
@@ -67,12 +68,42 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
   useEffect(() => {
     loadTasks()
     
-    // Set up real-time refresh every 30 seconds
+    // Set up real-time subscriptions for collection tasks
+    const taskSubscription = supabase
+      .channel('collection_tasks_changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'collection_tasks'
+      }, (payload) => {
+        console.log('Collection task changed:', payload)
+        loadTasks() // Refresh tasks when any task changes
+      })
+      .subscribe()
+
+    // Also listen for waste report status changes
+    const wasteReportSubscription = supabase
+      .channel('waste_reports_changes')
+      .on('postgres_changes', { 
+        event: 'UPDATE', 
+        schema: 'public', 
+        table: 'waste_reports'
+      }, (payload) => {
+        console.log('Waste report changed:', payload)
+        loadTasks() // Refresh tasks when waste reports change
+      })
+      .subscribe()
+
+    // Set up backup refresh every 30 seconds
     const interval = setInterval(() => {
       loadTasks()
     }, 30000)
 
-    return () => clearInterval(interval)
+    return () => {
+      taskSubscription.unsubscribe()
+      wasteReportSubscription.unsubscribe()
+      clearInterval(interval)
+    }
   }, [agent.id])
 
   const loadTasks = async () => {
@@ -124,31 +155,37 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
 
   const startCollection = async (taskId: string) => {
     try {
-      // Update task status in database
+      // First assign the task to this agent
+      const { data: assignedTask, error: assignError } = await database.pickupAgents.assignTaskToAgent(taskId, agent.id)
+      
+      if (assignError || !assignedTask) {
+        throw new Error(assignError?.message || 'Failed to assign task - may have been taken by another agent')
+      }
+
+      // Then update task status to in_progress
       const { data, error } = await database.pickupAgents.updateTaskStatus(taskId, 'in_progress')
       
       if (error) {
         throw new Error(error.message || 'Failed to start collection')
       }
 
-      // Update local state
-      setTasks(prev => prev.map(task => 
-        task.id === taskId 
-          ? { ...task, status: 'in_progress' as const, started_at: new Date().toISOString() }
-          : task
-      ))
+      // Refresh tasks to get updated data and remove task from other agents
+      await loadTasks()
 
       toast({
         title: "Collection Started!",
-        description: "You have started the collection task.",
+        description: "Task assigned to you and collection started.",
       })
     } catch (error) {
       console.error("Error starting collection:", error)
       toast({
         title: "Error",
-        description: "Failed to start collection. Please try again.",
+        description: error.message || "Failed to start collection. Please try again.",
         variant: "destructive",
       })
+      
+      // Refresh tasks in case of error to get latest state
+      await loadTasks()
     }
   }
 
@@ -241,8 +278,10 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case 'unassigned':
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Available for Pickup</Badge>
       case 'assigned':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Ready for Pickup</Badge>
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Assigned to You</Badge>
       case 'in_progress':
         return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">In Progress</Badge>
       case 'completed':
@@ -307,13 +346,13 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
           </div>
         </div>
 
-        {task.status === 'assigned' && (
+        {(task.status === 'unassigned' || task.status === 'assigned') && (
           <Button 
             onClick={() => startCollection(task.id)}
             className="w-full bg-green-600 hover:bg-green-700 text-white"
           >
             <Play className="w-4 h-4 mr-2" />
-            Start Collection
+            {task.status === 'unassigned' ? 'Accept & Start Collection' : 'Start Collection'}
           </Button>
         )}
 

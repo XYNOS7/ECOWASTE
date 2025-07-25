@@ -51,3 +51,9 @@ CREATE POLICY "Pickup agents can update own tasks" ON collection_tasks
 
 CREATE POLICY "Allow task creation" ON collection_tasks
   FOR INSERT WITH CHECK (true);
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_collection_tasks_status ON collection_tasks(status);
+CREATE INDEX IF NOT EXISTS idx_collection_tasks_agent_id ON collection_tasks(pickup_agent_id);
+CREATE INDEX IF NOT EXISTS idx_collection_tasks_waste_report_id ON collection_tasks(waste_report_id);
+CREATE INDEX IF NOT EXISTS idx_collection_tasks_unassigned ON collection_tasks(status) WHERE status = 'unassigned' AND pickup_agent_id IS NULL;

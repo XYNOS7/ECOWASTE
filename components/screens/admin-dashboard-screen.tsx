@@ -963,10 +963,10 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                           </TableCell>
                           <TableCell className="text-sm">
                         {task.status === 'unassigned' 
-                          ? 'Not Assigned' 
-                          : task.status === 'assigned' 
-                            ? 'Assigned (Pending Start)' 
-                            : task.pickup_agent?.full_name || 'Unknown Agent'
+                          ? <span className="text-gray-500">Available to All Agents</span>
+                          : task.pickup_agent?.full_name 
+                            ? <span className="font-medium text-blue-600">{task.pickup_agent.full_name}</span>
+                            : <span className="text-gray-500">No Agent Assigned</span>
                         }
                       </TableCell>
                           <TableCell>

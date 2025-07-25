@@ -63,8 +63,8 @@ export const database = {
               profiles:user_id(username)
             )
           `)
-          .eq("pickup_agent_id", agentId)
-          .in("status", ["assigned", "in_progress"])
+          .or(`pickup_agent_id.eq.${agentId},and(pickup_agent_id.is.null,status.eq.unassigned)`)
+          .in("status", ["unassigned", "assigned", "in_progress"])
           .order("assigned_at", { ascending: false })
 
         // Filter out tasks where waste report is completed or not in-progress
@@ -80,7 +80,7 @@ export const database = {
       }
     },
 
-    async updateTaskStatus(taskId: string, status: string) {
+    async updateTaskStatus(taskId: string, status: string, agentId?: string) {
       try {
         const updateData: any = { 
           status, 
@@ -89,6 +89,10 @@ export const database = {
 
         if (status === 'in_progress') {
           updateData.started_at = new Date().toISOString()
+          if (agentId) {
+            updateData.pickup_agent_id = agentId
+            updateData.status = 'assigned' // First assign, then move to in_progress
+          }
         } else if (status === 'completed') {
           updateData.completed_at = new Date().toISOString()
         }
@@ -106,45 +110,81 @@ export const database = {
       }
     },
 
+    async assignTaskToAgent(taskId: string, agentId: string) {
+      try {
+        // First check if task is still unassigned
+        const { data: currentTask, error: checkError } = await supabase
+          .from("collection_tasks")
+          .select("*")
+          .eq("id", taskId)
+          .eq("status", "unassigned")
+          .is("pickup_agent_id", null)
+          .single()
+
+        if (checkError || !currentTask) {
+          return { data: null, error: new Error("Task no longer available or already assigned") }
+        }
+
+        // Assign task to the agent and set status to assigned
+        const { data, error } = await supabase
+          .from("collection_tasks")
+          .update({ 
+            pickup_agent_id: agentId,
+            status: 'assigned',
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", taskId)
+          .eq("status", "unassigned") // Extra safety check
+          .is("pickup_agent_id", null)
+          .select()
+
+        if (error || !data || data.length === 0) {
+          return { data: null, error: new Error("Failed to assign task - may have been taken by another agent") }
+        }
+
+        console.log("Task assigned to agent:", agentId)
+        return { data: data[0], error: null }
+      } catch (err) {
+        console.error("Database assignTaskToAgent error:", err)
+        return { data: null, error: err }
+      }
+    },
+
     async createCollectionTask(wasteReportId: string) {
       try {
-        // Get available pickup agents (simple round-robin assignment for now)
+        // Get all available pickup agents
         const { data: agents, error: agentsError } = await supabase
           .from("pickup_agents")
           .select("id, full_name")
           .eq("is_active", true)
-          .limit(1)
 
         if (agentsError || !agents || agents.length === 0) {
           console.log("No available pickup agents found")
-          // Create task without agent assignment - will be picked up by available agents
-          const { data, error } = await supabase
-            .from("collection_tasks")
-            .insert({
-              pickup_agent_id: null,
-              waste_report_id: wasteReportId,
-              status: 'unassigned',
-              assigned_at: new Date().toISOString()
-            })
-            .select()
-            .single()
-          
-          return { data, error }
+          return { data: null, error: new Error("No pickup agents available") }
         }
 
-        // Create collection task with agent assignment
+        // Create unassigned tasks for all available agents (they can see and compete for it)
+        const tasksToInsert = agents.map(agent => ({
+          pickup_agent_id: null, // Unassigned initially
+          waste_report_id: wasteReportId,
+          status: 'unassigned',
+          assigned_at: new Date().toISOString(),
+          available_to_agent_id: agent.id // Track which agents can see this task
+        }))
+
+        // For now, create one unassigned task that all agents can see
         const { data, error } = await supabase
           .from("collection_tasks")
           .insert({
-            pickup_agent_id: agents[0].id,
+            pickup_agent_id: null,
             waste_report_id: wasteReportId,
-            status: 'assigned',
+            status: 'unassigned',
             assigned_at: new Date().toISOString()
           })
           .select()
           .single()
 
-        console.log("Collection task created and assigned to agent:", agents[0].full_name)
+        console.log("Collection task created as unassigned for all agents to compete")
         return { data, error }
       } catch (err) {
         console.error("Database createCollectionTask error:", err)
