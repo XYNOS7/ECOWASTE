@@ -461,21 +461,8 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
       </div>
 
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4">
           <h2 className="text-lg font-semibold text-gray-900">Your Collection Tasks</h2>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadTasks}
-            disabled={loading}
-            className="text-green-600 border-green-200 hover:bg-green-50"
-          >
-            {loading ? (
-              <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <Navigation className="w-4 h-4" />
-            )}
-          </Button>
         </div>
         <div className="space-y-4">
           {loading ? (
