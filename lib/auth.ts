@@ -47,12 +47,26 @@ export const auth = {
   // Sign out
   async signOut() {
     try {
+      console.log("Sign out button clicked")
+      
+      // First try to get current session to ensure we're authenticated
+      const { data: sessionData } = await supabase.auth.getSession()
+      console.log("Current session before signout:", sessionData?.session ? "Active" : "None")
+      
       const { error } = await supabase.auth.signOut({
         scope: 'local' // Force local signout to clear session
       })
       
       if (error) {
         console.error("Supabase signout error:", error)
+      } else {
+        console.log("Sign out successful")
+      }
+      
+      // Force clear local storage and session storage
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('supabase.auth.token')
+        sessionStorage.clear()
       }
       
       return { error }

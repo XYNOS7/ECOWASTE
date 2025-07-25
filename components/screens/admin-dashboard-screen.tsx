@@ -549,8 +549,25 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
   }
 
   const handleSignOut = async () => {
-    await auth.signOut()
-    onSignOut()
+    console.log("Admin sign out button clicked")
+    try {
+      const { error } = await auth.signOut()
+      if (error) {
+        console.error("Admin sign out error:", error)
+        toast({
+          title: "Sign Out Error",
+          description: "There was an issue signing out, but you will be logged out locally.",
+          variant: "destructive",
+        })
+      } else {
+        console.log("Admin sign out successful")
+      }
+    } catch (error) {
+      console.error("Admin sign out exception:", error)
+    } finally {
+      // Always call onSignOut to handle local state cleanup
+      onSignOut()
+    }
   }
 
   const getStatusBadgeVariant = (status: string) => {

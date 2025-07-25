@@ -47,6 +47,19 @@ function EcoTrackAppContent() {
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
+  // Add session refresh handling for tab switches
+  React.useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && (user || pickupAgent)) {
+        console.log("Main app tab became visible, checking session...")
+        // Session check is handled by useAuth hook
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange)
+  }, [user, pickupAgent])
+
   const screenVariants = {
     initial: { opacity: 0, x: 20 },
     animate: { opacity: 1, x: 0 },
@@ -138,13 +151,14 @@ function EcoTrackAppContent() {
   }
 
   const handleSignOut = async () => {
+    console.log("Main app sign out called")
     try {
       await signOut()
-      setCurrentScreen("auth")
-      setIsAdminMode(false)
-      setPickupAgent(null)
+      console.log("Main app sign out successful")
     } catch (error) {
-      console.error("Sign out error:", error)
+      console.error("Main app sign out error:", error)
+    } finally {
+      // Always reset state regardless of sign out success
       setCurrentScreen("auth")
       setIsAdminMode(false)
       setPickupAgent(null)

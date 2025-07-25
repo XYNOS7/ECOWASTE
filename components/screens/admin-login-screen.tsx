@@ -27,6 +27,19 @@ export function AdminLoginScreen({ onAdminLogin, onBackToUser }: AdminLoginScree
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
 
+  // Refresh session on mount to handle tab switching
+  useState(() => {
+    const refreshSession = async () => {
+      const { session, error } = await auth.getCurrentSession()
+      if (error) {
+        console.error("Admin login session error:", error.message)
+      } else {
+        console.log("Admin login session refreshed:", session ? "Active" : "None")
+      }
+    }
+    refreshSession()
+  })
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)

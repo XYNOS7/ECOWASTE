@@ -109,21 +109,50 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth event:", event, "Session:", session ? "Active" : "None")
       const currentUser = session?.user ?? null
       setUser(currentUser)
 
-     if (currentUser) {
-  try {
-    const profileData = await createProfileIfNeeded(currentUser)
-    setProfile(profileData)
-  } catch (err) {
-    console.error("Error loading profile:", err)
-  }
-}
-setLoading(false)
+      if (currentUser) {
+        try {
+          const profileData = await createProfileIfNeeded(currentUser)
+          setProfile(profileData)
+        } catch (err) {
+          console.error("Error loading profile:", err)
+        }
+      } else {
+        setProfile(null)
+      }
+      setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    // Handle tab visibility changes to refresh session
+    const handleVisibilityChange = async () => {
+      console.log("Tab visibility changed:", document.visibilityState)
+      if (document.visibilityState === "visible") {
+        // Recheck Supabase session when tab becomes visible
+        const { session, error } = await auth.getCurrentSession()
+        console.log("Session on tab focus:", session ? "Active" : "None", error ? error.message : "")
+        
+        if (session?.user && !user) {
+          // Session exists but user state is null, restore it
+          setUser(session.user)
+          const profileData = await createProfileIfNeeded(session.user)
+          setProfile(profileData)
+        } else if (!session?.user && user) {
+          // Session lost but user state exists, clear it
+          setUser(null)
+          setProfile(null)
+        }
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange)
+
+    return () => {
+      subscription.unsubscribe()
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+    }
   }, [])
 
   const signIn = async (email: string, password: string) => {
@@ -167,6 +196,7 @@ setLoading(false)
   const signOut = async () => {
     setLoading(true)
     try {
+      console.log("SignOut called from useAuth hook")
       const { error } = await auth.signOut()
       
       if (error) {
@@ -182,6 +212,12 @@ setLoading(false)
       if (typeof window !== 'undefined') {
         localStorage.removeItem('supabase.auth.token')
         sessionStorage.clear()
+        // Clear all supabase related items
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('supabase')) {
+            localStorage.removeItem(key)
+          }
+        })
       }
 
       return { error: null }
@@ -195,6 +231,12 @@ setLoading(false)
       if (typeof window !== 'undefined') {
         localStorage.removeItem('supabase.auth.token')
         sessionStorage.clear()
+        // Clear all supabase related items
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('supabase')) {
+            localStorage.removeItem(key)
+          }
+        })
       }
       
       return { error }
