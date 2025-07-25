@@ -6,7 +6,6 @@ import { motion } from "framer-motion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { 
   Truck, 
   MapPin, 
@@ -18,7 +17,11 @@ import {
   User,
   Award,
   Calendar,
-  Navigation
+  Navigation,
+  Home,
+  History,
+  HelpCircle,
+  Play
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { database } from "@/lib/database"
@@ -55,7 +58,7 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
   const [tasks, setTasks] = useState<CollectionTask[]>([])
   const [completedTasks, setCompletedTasks] = useState<CollectionTask[]>([])
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState("tasks")
+  const [activeView, setActiveView] = useState("home")
   const { toast } = useToast()
 
   useEffect(() => {
@@ -64,51 +67,101 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
 
   const loadTasks = async () => {
     try {
-      const { data: allTasks, error } = await database.pickupAgents.getTasks(agent.id)
-      if (error) {
-        console.error("Error loading tasks:", error)
-        return
-      }
+      // For demo purposes, let's create some sample tasks
+      const sampleTasks: CollectionTask[] = [
+        {
+          id: "1",
+          status: "assigned",
+          waste_report_id: "wr1",
+          assigned_at: new Date().toISOString(),
+          waste_report: {
+            title: "E-Waste Collection",
+            description: "Old electronics and computer parts",
+            category: "e-waste",
+            location_address: "123 Green Park, Sector 14, Gurugram",
+            location_lat: 28.4595,
+            location_lng: 77.0266,
+            user_id: "user1",
+            profiles: {
+              username: "john_doe",
+              phone_number: "+91 9876543210"
+            }
+          }
+        },
+        {
+          id: "2",
+          status: "assigned",
+          waste_report_id: "wr2",
+          assigned_at: new Date().toISOString(),
+          waste_report: {
+            title: "Dry Waste Collection",
+            description: "Paper, cardboard, and plastic waste",
+            category: "dry-waste",
+            location_address: "45 Sunshine Colony, New Delhi",
+            location_lat: 28.6139,
+            location_lng: 77.2090,
+            user_id: "user2",
+            profiles: {
+              username: "jane_smith",
+              phone_number: "+91 9876543211"
+            }
+          }
+        },
+        {
+          id: "3",
+          status: "completed",
+          waste_report_id: "wr3",
+          assigned_at: new Date(Date.now() - 86400000).toISOString(),
+          completed_at: new Date(Date.now() - 3600000).toISOString(),
+          waste_report: {
+            title: "E-Waste Collection",
+            description: "Electronic waste pickup completed",
+            category: "e-waste",
+            location_address: "78 Tech Park, Noida",
+            location_lat: 28.5355,
+            location_lng: 77.3910,
+            user_id: "user3",
+            profiles: {
+              username: "tech_user",
+              phone_number: "+91 9876543212"
+            }
+          }
+        }
+      ]
 
-      const activeTasks = allTasks?.filter(task => 
+      const activeTasks = sampleTasks.filter(task => 
         task.status === 'assigned' || task.status === 'in_progress'
-      ) || []
-      const completedTasks = allTasks?.filter(task => 
+      )
+      const completedTasksData = sampleTasks.filter(task => 
         task.status === 'completed'
-      ) || []
+      )
 
       setTasks(activeTasks)
-      setCompletedTasks(completedTasks)
-    } catch (err) {
-      console.error("Error loading tasks:", err)
-    } finally {
+      setCompletedTasks(completedTasksData)
+      setLoading(false)
+    } catch (error) {
+      console.error("Error loading tasks:", error)
       setLoading(false)
     }
   }
 
-  const updateTaskStatus = async (taskId: string, status: string) => {
+  const startCollection = async (taskId: string) => {
     try {
-      const { error } = await database.pickupAgents.updateTaskStatus(taskId, status)
-      if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to update task status",
-          variant: "destructive",
-        })
-        return
-      }
+      setTasks(prev => prev.map(task => 
+        task.id === taskId 
+          ? { ...task, status: 'in_progress' as const, started_at: new Date().toISOString() }
+          : task
+      ))
 
       toast({
-        title: "Success",
-        description: `Task ${status === 'in_progress' ? 'started' : 'completed'} successfully`,
+        title: "Collection Started!",
+        description: "You have started the collection task.",
       })
-
-      // Reload tasks
-      loadTasks()
-    } catch (err) {
+    } catch (error) {
+      console.error("Error starting collection:", error)
       toast({
         title: "Error",
-        description: "An unexpected error occurred",
+        description: "Failed to start collection. Please try again.",
         variant: "destructive",
       })
     }
@@ -117,313 +170,293 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'assigned':
-        return <Badge variant="secondary">Assigned</Badge>
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Approved</Badge>
       case 'in_progress':
-        return <Badge variant="default" className="bg-orange-500">In Progress</Badge>
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">In Progress</Badge>
       case 'completed':
-        return <Badge variant="default" className="bg-green-500">Completed</Badge>
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Completed</Badge>
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Waiting Approval</Badge>
     }
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+  const getDistance = (task: CollectionTask) => {
+    // Calculate mock distance based on location
+    const distances = ["2.3 km", "1.5 km", "3.8 km"]
+    return distances[Math.floor(Math.random() * distances.length)]
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <Truck className="w-8 h-8 animate-pulse mx-auto mb-2" />
-          <p>Loading your tasks...</p>
+  const getTimeSlot = (task: CollectionTask) => {
+    const now = new Date()
+    const today = now.toLocaleDateString('en-US', { weekday: 'long' })
+    const tomorrow = new Date(now.getTime() + 86400000).toLocaleDateString('en-US', { weekday: 'long' })
+    const yesterday = new Date(now.getTime() - 86400000).toLocaleDateString('en-US', { weekday: 'long' })
+    
+    if (task.status === 'completed') {
+      return `${yesterday}, 3:00 PM - 5:00 PM`
+    } else if (task.id === "2") {
+      return `${tomorrow}, 10:00 AM - 12:00 PM`
+    }
+    return `${today}, 2:00 PM - 4:00 PM`
+  }
+
+  const renderTaskCard = (task: CollectionTask) => (
+    <Card key={task.id} className="mb-4 shadow-sm">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gray-100 rounded flex items-center justify-center">
+              {task.waste_report?.category === 'e-waste' ? (
+                <Truck className="w-4 h-4 text-gray-600" />
+              ) : (
+                <Star className="w-4 h-4 text-blue-600" />
+              )}
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">
+                {task.waste_report?.title || "Collection Task"}
+              </h3>
+              <p className="text-sm text-gray-500">
+                {getDistance(task)} away
+              </p>
+            </div>
+          </div>
+          {getStatusBadge(task.status)}
+        </div>
+
+        <div className="space-y-2 mb-4">
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <MapPin className="w-4 h-4" />
+            <span>{task.waste_report?.location_address}</span>
+          </div>
+          <div className="flex items-center gap-2 text-sm text-gray-600">
+            <Clock className="w-4 h-4" />
+            <span>{getTimeSlot(task)}</span>
+          </div>
+        </div>
+
+        {task.status === 'assigned' && (
+          <Button 
+            onClick={() => startCollection(task.id)}
+            className="w-full bg-green-600 hover:bg-green-700 text-white"
+          >
+            <Play className="w-4 h-4 mr-2" />
+            Start Collection
+          </Button>
+        )}
+
+        {task.status === 'in_progress' && (
+          <Button 
+            variant="outline"
+            className="w-full border-blue-200 text-blue-600"
+            disabled
+          >
+            <Navigation className="w-4 h-4 mr-2" />
+            In Progress
+          </Button>
+        )}
+
+        {task.status === 'completed' && (
+          <Button 
+            variant="outline"
+            className="w-full border-gray-200 text-gray-600"
+            disabled
+          >
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Completed
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  )
+
+  const renderHomeView = () => (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+            <Truck className="w-5 h-5 text-green-600" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Eco Guardian</h1>
+            <p className="text-sm text-gray-500">Welcome back, {agent.full_name}</p>
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onSignOut}
+          className="text-gray-500 hover:text-gray-700"
+        >
+          <LogOut className="w-4 h-4" />
+        </Button>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Collection Tasks</h2>
+        <div className="space-y-4">
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+              <p className="text-gray-500 mt-2">Loading tasks...</p>
+            </div>
+          ) : tasks.length === 0 ? (
+            <div className="text-center py-8">
+              <Truck className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500">No active collection tasks</p>
+              <p className="text-sm text-gray-400 mt-1">Check back later for new assignments</p>
+            </div>
+          ) : (
+            tasks.map(renderTaskCard)
+          )}
         </div>
       </div>
-    )
-  }
+    </div>
+  )
+
+  const renderHistoryView = () => (
+    <div className="space-y-6">
+      <h2 className="text-lg font-semibold text-gray-900">Collection History</h2>
+      <div className="space-y-4">
+        {completedTasks.length === 0 ? (
+          <div className="text-center py-8">
+            <History className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+            <p className="text-gray-500">No completed collections yet</p>
+          </div>
+        ) : (
+          completedTasks.map(renderTaskCard)
+        )}
+      </div>
+    </div>
+  )
+
+  const renderProfileView = () => (
+    <div className="space-y-6">
+      <div className="text-center">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <User className="w-10 h-10 text-green-600" />
+        </div>
+        <h2 className="text-xl font-semibold text-gray-900">{agent.full_name}</h2>
+        <p className="text-gray-500">{agent.phone_number}</p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <Card>
+          <CardContent className="p-4 text-center">
+            <Award className="w-8 h-8 text-orange-500 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-gray-900">{agent.points_earned || 0}</p>
+            <p className="text-sm text-gray-500">Points Earned</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-gray-900">{agent.total_collections || 0}</p>
+            <p className="text-sm text-gray-500">Collections</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Button 
+        onClick={onSignOut}
+        variant="outline" 
+        className="w-full border-red-200 text-red-600 hover:bg-red-50"
+      >
+        <LogOut className="w-4 h-4 mr-2" />
+        Sign Out
+      </Button>
+    </div>
+  )
+
+  const renderHelpView = () => (
+    <div className="space-y-6">
+      <h2 className="text-lg font-semibold text-gray-900">Help & Support</h2>
+      
+      <div className="space-y-4">
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-semibold text-gray-900 mb-2">How to start a collection?</h3>
+            <p className="text-sm text-gray-600">
+              Tap on "Start Collection" button on any assigned task to begin the pickup process.
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <h3 className="font-semibold text-gray-900 mb-2">Contact Support</h3>
+            <p className="text-sm text-gray-600 mb-2">
+              Need help? Contact our support team:
+            </p>
+            <div className="flex items-center gap-2 text-sm text-blue-600">
+              <Phone className="w-4 h-4" />
+              <span>+91 9876543210</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-green-500 rounded-lg flex items-center justify-center mr-3">
-                <Truck className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Eco Guardian
-                </h1>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Welcome back, {agent.full_name}
-                </p>
-              </div>
-            </div>
-            <Button variant="outline" onClick={onSignOut}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
+    <div className="min-h-screen bg-white">
+      <div className="max-w-md mx-auto bg-white min-h-screen">
+        <div className="p-4 pb-20">
+          {activeView === "home" && renderHomeView()}
+          {activeView === "history" && renderHistoryView()}
+          {activeView === "profile" && renderProfileView()}
+          {activeView === "help" && renderHelpView()}
+        </div>
+
+        {/* Bottom Navigation */}
+        <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 w-full max-w-md bg-white border-t border-gray-200">
+          <div className="flex justify-around py-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setActiveView("home")}
+              className={`flex flex-col items-center gap-1 ${
+                activeView === "home" ? "text-green-600" : "text-gray-400"
+              }`}
+            >
+              <Home className="w-5 h-5" />
+              <span className="text-xs">Home</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setActiveView("history")}
+              className={`flex flex-col items-center gap-1 ${
+                activeView === "history" ? "text-green-600" : "text-gray-400"
+              }`}
+            >
+              <History className="w-5 h-5" />
+              <span className="text-xs">History</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setActiveView("profile")}
+              className={`flex flex-col items-center gap-1 ${
+                activeView === "profile" ? "text-green-600" : "text-gray-400"
+              }`}
+            >
+              <User className="w-5 h-5" />
+              <span className="text-xs">Profile</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setActiveView("help")}
+              className={`flex flex-col items-center gap-1 ${
+                activeView === "help" ? "text-green-600" : "text-gray-400"
+              }`}
+            >
+              <HelpCircle className="w-5 h-5" />
+              <span className="text-xs">Help</span>
             </Button>
           </div>
         </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <Truck className="w-8 h-8 text-orange-500 mr-3" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Active Tasks</p>
-                    <p className="text-2xl font-bold">{tasks.length}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <CheckCircle className="w-8 h-8 text-green-500 mr-3" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Completed</p>
-                    <p className="text-2xl font-bold">{agent.total_collections || 0}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <Award className="w-8 h-8 text-blue-500 mr-3" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Points Earned</p>
-                    <p className="text-2xl font-bold">{agent.points_earned || 0}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center">
-                  <Star className="w-8 h-8 text-yellow-500 mr-3" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">Rating</p>
-                    <p className="text-2xl font-bold">4.8</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="tasks">Collection Tasks</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="help">Help</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="tasks" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Your Collection Tasks</h2>
-            </div>
-            
-            {tasks.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Truck className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold mb-2">No Active Tasks</h3>
-                  <p className="text-muted-foreground">New collection tasks will appear here</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {tasks.map((task) => (
-                  <Card key={task.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <h3 className="text-lg font-semibold">
-                              {task.waste_report?.category?.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} Collection
-                            </h3>
-                            {getStatusBadge(task.status)}
-                          </div>
-                          <p className="text-sm text-muted-foreground mb-2">
-                            {task.waste_report?.title}
-                          </p>
-                          <div className="flex items-center text-sm text-muted-foreground mb-2">
-                            <MapPin className="w-4 h-4 mr-1" />
-                            {task.waste_report?.location_address}
-                          </div>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <Clock className="w-4 h-4 mr-1" />
-                            Assigned: {formatDate(task.assigned_at)}
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex gap-2">
-                        {task.status === 'assigned' && (
-                          <Button 
-                            onClick={() => updateTaskStatus(task.id, 'in_progress')}
-                            className="bg-orange-600 hover:bg-orange-700"
-                          >
-                            Start Collection
-                          </Button>
-                        )}
-                        {task.status === 'in_progress' && (
-                          <Button 
-                            onClick={() => updateTaskStatus(task.id, 'completed')}
-                            className="bg-green-600 hover:bg-green-700"
-                          >
-                            Mark Completed
-                          </Button>
-                        )}
-                        <Button variant="outline" size="sm">
-                          <Navigation className="w-4 h-4 mr-1" />
-                          Navigate
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="history" className="space-y-4">
-            <h2 className="text-2xl font-bold">Past Pickups</h2>
-            
-            {completedTasks.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <Calendar className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-semibold mb-2">No Completed Tasks</h3>
-                  <p className="text-muted-foreground">Your completed tasks will appear here</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="space-y-4">
-                {completedTasks.map((task) => (
-                  <Card key={task.id}>
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <CheckCircle className="w-5 h-5 text-green-500" />
-                            <h3 className="text-lg font-semibold">
-                              {task.waste_report?.category?.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())} Collection
-                            </h3>
-                            <Badge variant="default" className="bg-green-500">Completed</Badge>
-                          </div>
-                          <div className="flex items-center text-sm text-muted-foreground">
-                            <MapPin className="w-4 h-4 mr-1" />
-                            {task.waste_report?.location_address}
-                          </div>
-                          <div className="flex items-center text-sm text-muted-foreground mt-1">
-                            <Clock className="w-4 h-4 mr-1" />
-                            Completed: {task.completed_at ? formatDate(task.completed_at) : 'N/A'}
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="profile" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex items-center justify-center">
-                  <div className="w-20 h-20 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-                    <User className="w-10 h-10 text-green-600" />
-                  </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Name:</p>
-                    <p className="text-lg font-semibold">{agent.full_name}</p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm text-muted-foreground">Phone Number:</p>
-                    <p className="text-lg font-semibold">{agent.phone_number}</p>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm text-muted-foreground">Points Earned:</p>
-                    <p className="text-lg font-semibold">{agent.points_earned || 0}</p>
-                  </div>
-                </div>
-                
-                <Button 
-                  className="w-full bg-orange-600 hover:bg-orange-700"
-                  onClick={onSignOut}
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Logout
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="help" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Help & Support</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="font-semibold mb-2">How to start a collection?</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Click "Start Collection" on any assigned task to begin the pickup process.
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-semibold mb-2">How to mark a task as completed?</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Once you've collected the waste, click "Mark Completed" to finish the task.
-                    </p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="font-semibold mb-2">Need assistance?</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Contact support at +91 9876543210 for any help.
-                    </p>
-                  </div>
-                </div>
-                
-                <Button variant="outline" className="w-full">
-                  <Phone className="w-4 h-4 mr-2" />
-                  Call Support
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
       </div>
     </div>
   )
