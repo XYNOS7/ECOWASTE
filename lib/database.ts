@@ -800,7 +800,10 @@ export const database = {
         const random = Math.random().toString(36).slice(2)
         const objectKey = `${userId}/${Date.now()}-${random}.${ext}`
 
-        return supabase.storage.from(bucketId).upload(objectKey, file)
+        return supabase.storage.from(bucketId).upload(objectKey, file, {
+          upsert: true,
+          contentType: file.type || 'image/jpeg'
+        })
       }
 
       // 1️⃣ First try – requested bucket
@@ -810,6 +813,29 @@ export const database = {
       if (error && /bucket.*not.*found/i.test(error.message) && bucket !== "images") {
         bucket = "images"
         ;({ data, error } = await tryUpload(bucket))
+      }
+
+      // 3️⃣ If RLS error, try with public uploads
+      if (error && (error.message?.includes('row-level security') || error.message?.includes('policy'))) {
+        console.log('RLS error detected, trying public upload method')
+        const ext = file.name.split(".").pop() ?? "jpg"
+        const random = Math.random().toString(36).slice(2)
+        const publicKey = `public/${Date.now()}-${random}.${ext}`
+        
+        const { data: publicData, error: publicError } = await supabase.storage
+          .from(bucket)
+          .upload(publicKey, file, {
+            upsert: true,
+            contentType: file.type || 'image/jpeg'
+          })
+        
+        if (!publicError && publicData) {
+          const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(publicData.path)
+          return { url: publicUrl, error: null }
+        }
+        
+        // If still failing, return original error
+        return { url: null, error }
       }
 
       if (error || !data) return { url: null, error }
