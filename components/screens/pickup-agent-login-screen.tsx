@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Truck, Eye, EyeOff, Loader2, User, Phone } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { database } from "@/lib/database"
-import bcrypt from 'bcryptjs'
+const bcrypt = require('bcryptjs')
 
 interface PickupAgentLoginScreenProps {
   onPickupAgentLogin: (agent: any) => void
