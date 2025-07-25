@@ -89,13 +89,22 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
 
       console.log("Received collection tasks:", collectionTasks?.length || 0, collectionTasks)
 
-      // Filter active and completed tasks based on collection task status
-      const activeTasks = (collectionTasks || []).filter(task => 
-        task.status === 'assigned' || task.status === 'in_progress'
-      )
-      const completedTasksData = (collectionTasks || []).filter(task => 
-        task.status === 'completed'
-      )
+      // Filter tasks based on waste report status for real-time updates
+      const activeTasks = (collectionTasks || []).filter(task => {
+        // Only show tasks that are assigned or in progress AND have waste reports that are in-progress
+        const isActiveStatus = task.status === 'assigned' || task.status === 'in_progress'
+        const hasActiveWasteReport = task.waste_report && task.waste_report.status === 'in-progress'
+        
+        return isActiveStatus && hasActiveWasteReport
+      })
+
+      // Get completed tasks (either collection task is completed OR waste report is completed)
+      const completedTasksData = (collectionTasks || []).filter(task => {
+        const isTaskCompleted = task.status === 'completed'
+        const isWasteReportCompleted = task.waste_report && task.waste_report.status === 'completed'
+        
+        return isTaskCompleted || isWasteReportCompleted
+      })
 
       console.log("Active tasks:", activeTasks.length, "Completed tasks:", completedTasksData.length)
 
@@ -149,13 +158,8 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
         throw new Error(error.message || 'Failed to complete collection')
       }
 
-      // Move task from active to completed
-      const completedTask = tasks.find(task => task.id === taskId)
-      if (completedTask) {
-        const updatedTask = { ...completedTask, status: 'completed' as const, completed_at: new Date().toISOString() }
-        setTasks(prev => prev.filter(task => task.id !== taskId))
-        setCompletedTasks(prev => [updatedTask, ...prev])
-      }
+      // Refresh tasks to get updated data
+      await loadTasks()
 
       toast({
         title: "Collection Completed!",

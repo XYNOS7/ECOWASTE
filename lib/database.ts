@@ -67,8 +67,13 @@ export const database = {
           .in("status", ["assigned", "in_progress"])
           .order("assigned_at", { ascending: false })
 
-        console.log("Fetched collection tasks for agent:", agentId, "Tasks:", data?.length || 0)
-        return { data, error }
+        // Filter out tasks where waste report is completed or not in-progress
+        const filteredData = data?.filter(task => 
+          task.waste_report && task.waste_report.status === 'in-progress'
+        ) || []
+
+        console.log("Fetched collection tasks for agent:", agentId, "Tasks:", filteredData.length)
+        return { data: filteredData, error }
       } catch (err) {
         console.error("Database pickup agent getTasks error:", err)
         return { data: [], error: err }
@@ -130,6 +135,28 @@ export const database = {
         return { data, error }
       } catch (err) {
         console.error("Database createCollectionTask error:", err)
+        return { data: null, error: err }
+      }
+    },
+
+    async autoCompleteTasksForReport(wasteReportId: string) {
+      try {
+        // Auto-complete any active collection tasks for this waste report
+        const { data, error } = await supabase
+          .from("collection_tasks")
+          .update({ 
+            status: 'completed',
+            completed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq("waste_report_id", wasteReportId)
+          .in("status", ["assigned", "in_progress"])
+          .select()
+
+        console.log("Auto-completed collection tasks for waste report:", wasteReportId, "Completed:", data?.length || 0)
+        return { data, error }
+      } catch (err) {
+        console.error("Database autoCompleteTasksForReport error:", err)
         return { data: null, error: err }
       }
     },
