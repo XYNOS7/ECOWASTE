@@ -14,12 +14,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "EcoTrack - Smart Waste Management",
   description: "Transform waste into rewards with AI-powered tracking",
-  generator: 'v0.dev',
-  icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
-  },
+    generator: 'v0.dev'
 }
 
 export default function RootLayout({
