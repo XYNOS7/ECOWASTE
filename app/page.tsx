@@ -40,10 +40,10 @@ function EcoTrackAppContent() {
         window.location.hash = '' // Clear the hash
       }
     }
-    
+
     window.addEventListener('hashchange', handleHashChange)
     handleHashChange() // Check on mount
-    
+
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
@@ -183,7 +183,7 @@ function EcoTrackAppContent() {
   }
 
   const renderScreen = () => {
-    if (!profile) return null
+    if (!profile && !pickupAgent) return
 
     switch (currentScreen) {
       case "home":
@@ -205,12 +205,8 @@ function EcoTrackAppContent() {
     }
   }
 
-  if (loading) {
-    return <LoadingFallback />
-  }
-
-  // Show auth screen if not authenticated (unless in admin mode or pickup agent mode)
-  if ((!user && !pickupAgent) || (!profile && !isAdminMode)) {
+  // Show auth screen if not authenticated as user or pickup agent
+  if (!user && !pickupAgent) {
     if (currentScreen === "admin-login") {
       return (
         <AdminLoginScreen 
