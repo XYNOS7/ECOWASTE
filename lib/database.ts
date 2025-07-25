@@ -59,12 +59,15 @@ export const database = {
               location_lat,
               location_lng,
               user_id,
-              profiles:user_id(username)
+              status,
+              profiles:user_id(username, phone_number)
             )
           `)
           .eq("pickup_agent_id", agentId)
-          .order("created_at", { ascending: false })
+          .in("status", ["assigned", "in_progress"])
+          .order("assigned_at", { ascending: false })
 
+        console.log("Fetched collection tasks for agent:", agentId, "Tasks:", data?.length || 0)
         return { data, error }
       } catch (err) {
         console.error("Database pickup agent getTasks error:", err)

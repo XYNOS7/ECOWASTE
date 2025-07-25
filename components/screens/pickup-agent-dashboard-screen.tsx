@@ -63,10 +63,19 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
 
   useEffect(() => {
     loadTasks()
+    
+    // Set up real-time refresh every 30 seconds
+    const interval = setInterval(() => {
+      loadTasks()
+    }, 30000)
+
+    return () => clearInterval(interval)
   }, [agent.id])
 
   const loadTasks = async () => {
     try {
+      console.log("Loading tasks for agent:", agent.id)
+      
       // Fetch real collection tasks for this agent from database
       const { data: collectionTasks, error } = await database.pickupAgents.getTasks(agent.id)
       
@@ -78,13 +87,17 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
         return
       }
 
-      // Filter active and completed tasks
+      console.log("Received collection tasks:", collectionTasks?.length || 0, collectionTasks)
+
+      // Filter active and completed tasks based on collection task status
       const activeTasks = (collectionTasks || []).filter(task => 
         task.status === 'assigned' || task.status === 'in_progress'
       )
       const completedTasksData = (collectionTasks || []).filter(task => 
         task.status === 'completed'
       )
+
+      console.log("Active tasks:", activeTasks.length, "Completed tasks:", completedTasksData.length)
 
       setTasks(activeTasks)
       setCompletedTasks(completedTasksData)
@@ -161,13 +174,13 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'assigned':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Approved</Badge>
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Ready for Pickup</Badge>
       case 'in_progress':
         return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">In Progress</Badge>
       case 'completed':
         return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Completed</Badge>
       default:
-        return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Waiting Approval</Badge>
+        return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Pending</Badge>
     }
   }
 
@@ -283,7 +296,22 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
       </div>
 
       <div>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Your Collection Tasks</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900">Your Collection Tasks</h2>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadTasks}
+            disabled={loading}
+            className="text-green-600 border-green-200 hover:bg-green-50"
+          >
+            {loading ? (
+              <div className="w-4 h-4 border-2 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <Navigation className="w-4 h-4" />
+            )}
+          </Button>
+        </div>
         <div className="space-y-4">
           {loading ? (
             <div className="text-center py-8">
