@@ -353,9 +353,36 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
         </div>
 
         <div className="space-y-2 mb-4">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <MapPin className="w-4 h-4" />
-            <span>{task.waste_report?.location_address}</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <MapPin className="w-4 h-4" />
+              <span>{task.waste_report?.location_address}</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (task.waste_report?.location_lat && task.waste_report?.location_lng) {
+                  // Open Google Maps with the specific coordinates
+                  const mapsUrl = `https://www.google.com/maps?q=${task.waste_report.location_lat},${task.waste_report.location_lng}`
+                  window.open(mapsUrl, '_blank')
+                } else if (task.waste_report?.location_address) {
+                  // Fallback to address search if coordinates are not available
+                  const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(task.waste_report.location_address)}`
+                  window.open(mapsUrl, '_blank')
+                } else {
+                  toast({
+                    title: "Location Not Available",
+                    description: "This task doesn't have location data available.",
+                    variant: "destructive",
+                  })
+                }
+              }}
+              className="text-green-600 border-green-200 hover:bg-green-50"
+            >
+              <Navigation className="w-4 h-4 mr-1" />
+              Navigate
+            </Button>
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Clock className="w-4 h-4" />
