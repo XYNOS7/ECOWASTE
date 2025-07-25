@@ -1,3 +1,4 @@
+
 import { createClient } from "@supabase/supabase-js"
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://example.supabase.co"
@@ -18,12 +19,16 @@ if (supabaseUrl === "https://example.supabase.co" || supabaseAnonKey === "public
   )
 }
 
+// Create a stable singleton Supabase client to prevent session corruption
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+    storageKey: 'ecotrack-auth-token',
+    debug: false
   },
   db: {
     schema: "public",
@@ -40,6 +45,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 })
 
+// Ensure client is accessible globally for debugging
+if (typeof window !== 'undefined') {
+  ;(window as any).supabase = supabase
+}
+
 // Test database connection
 export async function testConnection() {
   try {
@@ -47,6 +57,35 @@ export async function testConnection() {
     return { connected: !error, error }
   } catch (err) {
     return { connected: false, error: err }
+  }
+}
+
+// Session management utilities
+export async function getValidSession() {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession()
+    if (error) {
+      console.error("Session validation error:", error)
+      return null
+    }
+    return session
+  } catch (err) {
+    console.error("Session validation failed:", err)
+    return null
+  }
+}
+
+export async function refreshSession() {
+  try {
+    const { data, error } = await supabase.auth.refreshSession()
+    if (error) {
+      console.error("Session refresh error:", error)
+      return null
+    }
+    return data.session
+  } catch (err) {
+    console.error("Session refresh failed:", err)
+    return null
   }
 }
 

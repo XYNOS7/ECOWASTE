@@ -1,9 +1,11 @@
+
 "use client"
 
 import type React from "react"
 import { useState, useEffect, createContext, useContext } from "react"
 import { auth } from "@/lib/auth"
 import { database } from "@/lib/database"
+import { supabase, getValidSession } from "@/lib/supabase"
 import type { Profile } from "@/lib/supabase"
 
 interface AuthContextType {
@@ -91,32 +93,82 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { data: null, error: new Error("No user logged in") }
   }
 
-  useEffect(() => {
-    // Get initial session
-    auth.getCurrentSession().then(async ({ session }) => {
-      const currentUser = session?.user ?? null
-      setUser(currentUser)
-
-      if (currentUser) {
-        const profileData = await createProfileIfNeeded(currentUser)
+  // Validate and restore session on tab focus
+  const validateAndRestoreSession = async () => {
+    try {
+      const session = await getValidSession()
+      console.log("Session validation result:", session ? "Valid" : "Invalid")
+      
+      if (session?.user && !user) {
+        // Session exists but user state is null, restore it
+        console.log("Restoring user session from validation")
+        setUser(session.user)
+        const profileData = await createProfileIfNeeded(session.user)
         setProfile(profileData)
+      } else if (!session?.user && user) {
+        // Session lost but user state exists, clear it
+        console.log("Clearing stale user state from validation")
+        setUser(null)
+        setProfile(null)
       }
+    } catch (error) {
+      console.error("Session validation error:", error)
+      // On validation error, clear state to be safe
+      setUser(null)
+      setProfile(null)
+    }
+  }
 
-      setLoading(false)
-    })
+  useEffect(() => {
+    let mounted = true
+
+    // Get initial session
+    const initializeAuth = async () => {
+      try {
+        const session = await getValidSession()
+        const currentUser = session?.user ?? null
+        
+        if (mounted) {
+          setUser(currentUser)
+
+          if (currentUser) {
+            const profileData = await createProfileIfNeeded(currentUser)
+            if (mounted) {
+              setProfile(profileData)
+            }
+          }
+
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error("Auth initialization error:", error)
+        if (mounted) {
+          setUser(null)
+          setProfile(null)
+          setLoading(false)
+        }
+      }
+    }
+
+    initializeAuth()
 
     // Listen for auth changes
     const {
       data: { subscription },
     } = auth.onAuthStateChange(async (event, session) => {
       console.log("Auth event:", event, "Session:", session ? "Active" : "None")
+      
+      if (!mounted) return
+
       const currentUser = session?.user ?? null
       setUser(currentUser)
 
       if (currentUser) {
         try {
           const profileData = await createProfileIfNeeded(currentUser)
-          setProfile(profileData)
+          if (mounted) {
+            setProfile(profileData)
+          }
         } catch (err) {
           console.error("Error loading profile:", err)
         }
@@ -128,36 +180,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Handle tab visibility changes to refresh session
     const handleVisibilityChange = async () => {
+      if (!mounted) return
+      
       console.log("Tab visibility changed:", document.visibilityState)
       if (document.visibilityState === "visible") {
-        try {
-          // Recheck Supabase session when tab becomes visible
-          const { session, error } = await auth.getCurrentSession()
-          console.log("Session on tab focus:", session ? "Active" : "None", error ? error.message : "")
-          
-          if (session?.user && !user) {
-            // Session exists but user state is null, restore it
-            console.log("Restoring user session from tab focus")
-            setUser(session.user)
-            const profileData = await createProfileIfNeeded(session.user)
-            setProfile(profileData)
-          } else if (!session?.user && user) {
-            // Session lost but user state exists, clear it
-            console.log("Clearing stale user state from tab focus")
-            setUser(null)
-            setProfile(null)
-          }
-        } catch (error) {
-          console.error("Error refreshing session on tab focus:", error)
-        }
+        console.log("Tab became visible, validating session...")
+        await validateAndRestoreSession()
       }
     }
 
+    // Handle page focus events as backup
+    const handleFocus = async () => {
+      if (!mounted) return
+      
+      console.log("Window focus detected, validating session...")
+      await validateAndRestoreSession()
+    }
+
     document.addEventListener("visibilitychange", handleVisibilityChange)
+    window.addEventListener("focus", handleFocus)
 
     return () => {
+      mounted = false
       subscription.unsubscribe()
       document.removeEventListener("visibilitychange", handleVisibilityChange)
+      window.removeEventListener("focus", handleFocus)
     }
   }, [])
 
@@ -204,6 +251,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("SignOut called from useAuth hook")
       
+      // Use the improved auth.signOut method
       const { error } = await auth.signOut()
       
       if (error) {
@@ -217,19 +265,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null)
       setProfile(null)
       
-      // Clear any cached data
+      // Force reload to clear any remaining state
       if (typeof window !== 'undefined') {
-        // Clear all auth-related storage more aggressively
-        Object.keys(localStorage).forEach(key => {
-          if (key.startsWith('supabase') || key.includes('auth') || key.includes('session')) {
-            localStorage.removeItem(key)
-          }
-        })
-        
-        // Clear session storage completely
-        sessionStorage.clear()
-        
-        // Force reload to clear any remaining state
         setTimeout(() => {
           window.location.reload()
         }, 100)
@@ -244,14 +281,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null)
       
       if (typeof window !== 'undefined') {
-        Object.keys(localStorage).forEach(key => {
-          if (key.startsWith('supabase') || key.includes('auth') || key.includes('session')) {
-            localStorage.removeItem(key)
-          }
-        })
-        sessionStorage.clear()
-        
-        // Force reload on error too
         setTimeout(() => {
           window.location.reload()
         }, 100)

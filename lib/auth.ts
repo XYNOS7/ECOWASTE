@@ -1,4 +1,5 @@
-import { supabase } from "./supabase"
+
+import { supabase, getValidSession } from "./supabase"
 
 export const auth = {
   // Sign up
@@ -44,18 +45,21 @@ export const auth = {
     }
   },
 
-  // Sign out
+  // Sign out with proper session validation
   async signOut() {
     try {
       console.log("Sign out button clicked")
       
-      // First refresh session to ensure we're working with the latest state
-      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
-      console.log("Current session before signout:", sessionData?.session ? "Active" : "None")
-      
-      if (sessionError) {
-        console.error("Session error before signout:", sessionError)
+      // Check if we have a valid session before attempting signout
+      const session = await getValidSession()
+      if (!session) {
+        console.warn("No active session to sign out from - clearing local state")
+        // Still clear local storage even if no session
+        this.clearLocalStorage()
+        return { error: null }
       }
+      
+      console.log("Valid session found, proceeding with signout")
       
       // Try to sign out from Supabase
       const { error } = await supabase.auth.signOut({
@@ -66,14 +70,34 @@ export const auth = {
         console.error("Supabase signout error:", error)
         // Don't return early - still proceed with local cleanup
       } else {
-        console.log("Sign out successful")
+        console.log("Supabase sign out successful")
       }
       
-      // Force clear all auth-related storage
-      if (typeof window !== 'undefined') {
+      // Always clear local storage regardless of server response
+      this.clearLocalStorage()
+      
+      return { error: null } // Always return success for local cleanup
+    } catch (err) {
+      console.error("Auth signout error:", err)
+      
+      // Force local cleanup even on error
+      this.clearLocalStorage()
+      
+      return { error: null } // Return success to force state reset
+    }
+  },
+
+  // Clear local storage helper
+  clearLocalStorage() {
+    if (typeof window !== 'undefined') {
+      try {
         // Clear all supabase related items
         Object.keys(localStorage).forEach(key => {
-          if (key.startsWith('supabase') || key.includes('auth')) {
+          if (key.startsWith('supabase') || 
+              key.startsWith('sb-') || 
+              key.includes('auth') || 
+              key.includes('session') ||
+              key.includes('ecotrack')) {
             localStorage.removeItem(key)
           }
         })
@@ -81,32 +105,10 @@ export const auth = {
         // Clear session storage
         sessionStorage.clear()
         
-        // Also clear any remaining tokens
-        localStorage.removeItem('supabase.auth.token')
-        
-        // Clear any Supabase auth tokens that might exist
-        Object.keys(localStorage).forEach(key => {
-          if (key.startsWith('sb-') && key.includes('-auth-token')) {
-            localStorage.removeItem(key)
-          }
-        })
+        console.log("Local storage cleared successfully")
+      } catch (err) {
+        console.error("Error clearing local storage:", err)
       }
-      
-      return { error: null } // Always return success for local cleanup
-    } catch (err) {
-      console.error("Auth signout error:", err)
-      
-      // Force local cleanup even on error
-      if (typeof window !== 'undefined') {
-        Object.keys(localStorage).forEach(key => {
-          if (key.startsWith('supabase') || key.includes('auth')) {
-            localStorage.removeItem(key)
-          }
-        })
-        sessionStorage.clear()
-      }
-      
-      return { error: null } // Return success to force state reset
     }
   },
 
@@ -124,14 +126,11 @@ export const auth = {
     }
   },
 
-  // Get current session
+  // Get current session with error handling
   async getCurrentSession() {
     try {
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession()
-      return { session, error }
+      const session = await getValidSession()
+      return { session, error: null }
     } catch (err) {
       console.error("Get current session error:", err)
       return { session: null, error: err }
