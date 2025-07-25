@@ -864,7 +864,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                           <TableCell className="font-medium">{userItem.username}</TableCell>
                           <TableCell className="font-mono text-sm">{userItem.email}</TableCell>
                           <TableCell>
-                            <divclassName="flex items-center gap-1">
+                            <div className="flex items-center gap-1">
                               <Coins className="w-4 h-4 text-yellow-500" />
                               {userItem.eco_coins}
                             </div>
