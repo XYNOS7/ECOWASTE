@@ -1,0 +1,136 @@
+Great question — to **debug why your "Sign Out" button stops working after switching tabs**, follow these **systematic steps** to isolate the problem:
+
+---
+
+## ✅ Step-by-Step Debug Checklist
+
+### 1. **Add a `console.log` inside the Sign Out function**
+
+This ensures the handler is **actually running** when you click:
+
+```tsx
+const handleSignOut = async () => {
+  console.log("Sign out button clicked");
+
+  const { error } = await supabase.auth.signOut();
+
+  if (error) {
+    console.error("Sign out error:", error.message);
+  } else {
+    console.log("Sign out successful");
+    router.push("/login"); // or wherever your login page is
+  }
+};
+```
+
+If you **don’t see "Sign out button clicked"** in the browser console → the button is not wired correctly.
+
+---
+
+### 2. **Verify the `onClick` binding**
+
+Make sure your JSX looks like:
+
+```tsx
+<button onClick={handleSignOut}>Sign Out</button>
+```
+
+Avoid this mistake:
+
+```tsx
+<button onClick={handleSignOut()}>❌ Wrong — this calls the function immediately</button>
+```
+
+---
+
+### 3. **Check if Supabase is still initialized**
+
+Right before `signOut`, log the client:
+
+```tsx
+console.log("Supabase client:", supabase);
+```
+
+If it’s `undefined` or malformed, your provider context may be lost after tab switch.
+
+---
+
+### 4. **Add `onAuthStateChange` in a top-level component**
+
+To ensure auth state is properly syncing across tabs:
+
+```tsx
+useEffect(() => {
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((event, session) => {
+    console.log("Auth event:", event, session);
+  });
+
+  return () => subscription.unsubscribe();
+}, []);
+```
+
+Test:
+
+* Sign in
+* Open another tab
+* Sign out in one tab
+* See if the other tab reflects the change
+
+---
+
+### 5. **Look at console and network tab**
+
+* Open **DevTools → Console** and **Network**
+* Click "Sign Out"
+* See if a network request is sent to `/auth/v1/logout`
+* Check if there’s an error response
+
+---
+
+### 6. **Check your SupabaseProvider Scope**
+
+Make sure the `SupabaseProvider` wraps your entire layout (especially if you're using the `/app` folder in Next.js):
+
+#### ✅ Good (in `app/layout.tsx`):
+
+```tsx
+<body>
+  <SupabaseProvider>
+    {children}
+  </SupabaseProvider>
+</body>
+```
+
+#### ❌ Bad:
+
+If the provider is only wrapping **a single page** or **component**, it won’t persist across tabs or navigations.
+
+---
+
+### 7. **Are you using server components for buttons?**
+
+Sign-out logic **must be in a client component**. Add this line at the top of your file:
+
+```tsx
+'use client'
+```
+
+If you're missing it, `onClick` won’t work at all.
+
+---
+
+## 🔎 Final Tip — Use This Mini Test Checklist
+
+| Check                        | Expected                                       |
+| ---------------------------- | ---------------------------------------------- |
+| Click logs message?          | ✅ `console.log` seen                           |
+| Network request made?        | ✅ `/auth/v1/logout` sent                       |
+| Supabase initialized?        | ✅ `console.log(supabase)` not null             |
+| `onClick` handler not stale? | ✅ Defined in same file or updated on re-render |
+| Client component?            | ✅ `'use client'` present                       |
+
+---
+
+If you send your **SignOut component code** + how you're wrapping Supabase (like `SupabaseProvider`), I can pinpoint the issue instantly.

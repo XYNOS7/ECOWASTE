@@ -1,0 +1,127 @@
+Ah, thanks for the clarification — you're describing **session inactivity or stale context after switching browser tabs**. This is **likely a Supabase auth/session rehydration issue** caused by either:
+
+---
+
+## 🧠 The Real Problem:
+
+> **When switching away and back to the tab**, Supabase client might:
+
+* Lose the auth session (especially in client-only setups)
+* Or the `supabase.auth.signOut()` call stops working because `supabase.auth` is no longer correctly hydrated
+
+---
+
+## ✅ Immediate Fixes + Debugging Steps
+
+### ✅ 1. **Reinitialize Supabase session on mount (important)**
+
+If you're using Supabase **client-side only**, you **must** refetch the session when the component mounts:
+
+```tsx
+useEffect(() => {
+  const refreshSession = async () => {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) console.error("Session error:", error.message);
+    else console.log("Session refreshed:", data);
+  };
+
+  refreshSession();
+}, []);
+```
+
+---
+
+### ✅ 2. **Track `auth.onAuthStateChange` to watch tab changes**
+
+Add this in a top-level `useEffect` (like in `_app.tsx` or a root provider):
+
+```tsx
+useEffect(() => {
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((event, session) => {
+    console.log("Auth event:", event);
+    if (!session) {
+      // Session lost — maybe refresh or sign out user
+    }
+  });
+
+  return () => subscription.unsubscribe();
+}, []);
+```
+
+This will show if **your session is getting invalidated or changed** when tab focus changes.
+
+---
+
+### ✅ 3. **Ensure `auth.persistSession: true` in Supabase client**
+
+When initializing the Supabase client, make sure session persistence is **enabled**:
+
+```ts
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+  },
+});
+```
+
+If you’re using a helper like `createBrowserClient()`, it should do this by default, but double-check.
+
+---
+
+### ✅ 4. **Use `visibilitychange` to debug tab focus loss**
+
+In a client component:
+
+```tsx
+useEffect(() => {
+  const handleVisibility = () => {
+    console.log("Tab visibility changed:", document.visibilityState);
+    if (document.visibilityState === "visible") {
+      // Recheck Supabase session here
+      supabase.auth.getSession().then(({ data }) => {
+        console.log("Session on tab focus:", data);
+      });
+    }
+  };
+
+  document.addEventListener("visibilitychange", handleVisibility);
+  return () => document.removeEventListener("visibilitychange", handleVisibility);
+}, []);
+```
+
+This will help you track session decay when re-entering the tab.
+
+---
+
+## 🧪 Test This Now
+
+* Open your app
+* Login
+* Open another browser tab (any site)
+* Wait \~15+ seconds (Supabase token might expire or get desynced)
+* Return to your app tab
+* Try clicking "Sign Out"
+
+Then:
+
+* Check **console for session logs**
+* Check **Network tab** for `/auth/v1/logout` request
+
+---
+
+## ✅ Summary Fix Plan
+
+| Fix                              | Why                                            |
+| -------------------------------- | ---------------------------------------------- |
+| `auth.getSession()` on mount     | Ensures session is rehydrated                  |
+| `onAuthStateChange()` listener   | Tracks session invalidation                    |
+| `persistSession: true` in client | Keeps user logged in across tabs               |
+| Add `console.log` to sign out    | Confirms if click still works after tab switch |
+
+---
+
+If you can share your `supabase.ts` client setup and the sign-out button component, I’ll confirm it line-by-line for production safety.
