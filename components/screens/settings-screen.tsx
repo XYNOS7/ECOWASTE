@@ -164,13 +164,27 @@ export function SettingsScreen() {
 
   const handleSignOut = async () => {
     try {
-      await signOut()
-      toast({
-        title: "Signed out",
-        description: "You have been signed out successfully.",
-      })
+      const { error } = await signOut()
+      
+      if (!error) {
+        toast({
+          title: "Signed out",
+          description: "You have been signed out successfully.",
+        })
+      } else {
+        toast({
+          title: "Sign out completed",
+          description: "You have been signed out locally.",
+          variant: "default",
+        })
+      }
     } catch (error) {
       console.error("Sign out error:", error)
+      toast({
+        title: "Sign out completed",
+        description: "You have been signed out locally.",
+        variant: "default",
+      })
     }
   }
 

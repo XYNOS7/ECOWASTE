@@ -139,12 +139,11 @@ function EcoTrackAppContent() {
   const handleAdminSignOut = async () => {
     try {
       await signOut()
-      setIsAdminMode(false)
-      setCurrentScreen("auth")
     } catch (error) {
       console.error("Admin sign out error:", error)
+    } finally {
       setIsAdminMode(false)
-      setCurrentScreen("auth")
+      setCurrentScreen("home")
     }
   }
 

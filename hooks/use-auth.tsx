@@ -165,15 +165,42 @@ setLoading(false)
   }
 
   const signOut = async () => {
+    setLoading(true)
     try {
-      await auth.signOut()
+      const { error } = await auth.signOut()
+      
+      if (error) {
+        console.error("Sign out error:", error)
+        // Still proceed with local cleanup even if server signout fails
+      }
+
+      // Always clear local state regardless of server response
+      setUser(null)
+      setProfile(null)
+      
+      // Clear any cached data
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('supabase.auth.token')
+        sessionStorage.clear()
+      }
+
+      return { error: null }
     } catch (error) {
       console.error("Sign out error:", error)
+      
+      // Force local cleanup even on error
+      setUser(null)
+      setProfile(null)
+      
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('supabase.auth.token')
+        sessionStorage.clear()
+      }
+      
+      return { error }
+    } finally {
+      setLoading(false)
     }
-
-    setUser(null)
-    setProfile(null)
-    return { error: null }
   }
 
   const value = {

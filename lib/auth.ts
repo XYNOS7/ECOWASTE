@@ -47,7 +47,14 @@ export const auth = {
   // Sign out
   async signOut() {
     try {
-      const { error } = await supabase.auth.signOut()
+      const { error } = await supabase.auth.signOut({
+        scope: 'local' // Force local signout to clear session
+      })
+      
+      if (error) {
+        console.error("Supabase signout error:", error)
+      }
+      
       return { error }
     } catch (err) {
       console.error("Auth signout error:", err)
