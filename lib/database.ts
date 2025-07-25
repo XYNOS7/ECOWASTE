@@ -60,7 +60,7 @@ export const database = {
               location_lng,
               user_id,
               status,
-              profiles:user_id(username, phone_number)
+              profiles:user_id(username)
             )
           `)
           .eq("pickup_agent_id", agentId)
