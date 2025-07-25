@@ -322,6 +322,17 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
         throw new Error('Report not found or update failed')
       }
 
+      // If waste report is verified (moved to in-progress), create a collection task
+      if (reportType === 'waste' && newStatus === 'in-progress') {
+        const taskResult = await database.pickupAgents.createCollectionTask(reportId)
+        if (taskResult.error) {
+          console.warn("Failed to create collection task:", taskResult.error)
+          // Don't throw error here as the report status was updated successfully
+        } else {
+          console.log("Collection task created successfully")
+        }
+      }
+
       // Update local state
       setReports(prevReports => 
         prevReports.map(report => 
@@ -333,7 +344,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
 
       toast({
         title: "Success",
-        description: `Report status updated to ${newStatus.replace('-', ' ')}`,
+        description: `Report status updated to ${newStatus.replace('-', ' ')}${reportType === 'waste' && newStatus === 'in-progress' ? ' and collection task created' : ''}`,
       })
 
       // Refresh data

@@ -97,6 +97,39 @@ export const database = {
         return { data: null, error: err }
       }
     },
+
+    async createCollectionTask(wasteReportId: string) {
+      try {
+        // Get available pickup agents (simple round-robin assignment for now)
+        const { data: agents, error: agentsError } = await supabase
+          .from("pickup_agents")
+          .select("id")
+          .eq("is_active", true)
+          .limit(1)
+
+        if (agentsError || !agents || agents.length === 0) {
+          console.log("No available pickup agents found")
+          return { data: null, error: { message: "No available pickup agents" } }
+        }
+
+        // Create collection task
+        const { data, error } = await supabase
+          .from("collection_tasks")
+          .insert({
+            pickup_agent_id: agents[0].id,
+            waste_report_id: wasteReportId,
+            status: 'assigned',
+            assigned_at: new Date().toISOString()
+          })
+          .select()
+          .single()
+
+        return { data, error }
+      } catch (err) {
+        console.error("Database createCollectionTask error:", err)
+        return { data: null, error: err }
+      }
+    },
   },
 
   // Admin operations

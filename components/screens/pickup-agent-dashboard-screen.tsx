@@ -67,72 +67,22 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
 
   const loadTasks = async () => {
     try {
-      // For demo purposes, let's create some sample tasks
-      const sampleTasks: CollectionTask[] = [
-        {
-          id: "1",
-          status: "assigned",
-          waste_report_id: "wr1",
-          assigned_at: new Date().toISOString(),
-          waste_report: {
-            title: "E-Waste Collection",
-            description: "Old electronics and computer parts",
-            category: "e-waste",
-            location_address: "123 Green Park, Sector 14, Gurugram",
-            location_lat: 28.4595,
-            location_lng: 77.0266,
-            user_id: "user1",
-            profiles: {
-              username: "john_doe",
-              phone_number: "+91 9876543210"
-            }
-          }
-        },
-        {
-          id: "2",
-          status: "assigned",
-          waste_report_id: "wr2",
-          assigned_at: new Date().toISOString(),
-          waste_report: {
-            title: "Dry Waste Collection",
-            description: "Paper, cardboard, and plastic waste",
-            category: "dry-waste",
-            location_address: "45 Sunshine Colony, New Delhi",
-            location_lat: 28.6139,
-            location_lng: 77.2090,
-            user_id: "user2",
-            profiles: {
-              username: "jane_smith",
-              phone_number: "+91 9876543211"
-            }
-          }
-        },
-        {
-          id: "3",
-          status: "completed",
-          waste_report_id: "wr3",
-          assigned_at: new Date(Date.now() - 86400000).toISOString(),
-          completed_at: new Date(Date.now() - 3600000).toISOString(),
-          waste_report: {
-            title: "E-Waste Collection",
-            description: "Electronic waste pickup completed",
-            category: "e-waste",
-            location_address: "78 Tech Park, Noida",
-            location_lat: 28.5355,
-            location_lng: 77.3910,
-            user_id: "user3",
-            profiles: {
-              username: "tech_user",
-              phone_number: "+91 9876543212"
-            }
-          }
-        }
-      ]
+      // Fetch real collection tasks for this agent from database
+      const { data: collectionTasks, error } = await database.pickupAgents.getTasks(agent.id)
+      
+      if (error) {
+        console.error("Error loading tasks:", error)
+        setTasks([])
+        setCompletedTasks([])
+        setLoading(false)
+        return
+      }
 
-      const activeTasks = sampleTasks.filter(task => 
+      // Filter active and completed tasks
+      const activeTasks = (collectionTasks || []).filter(task => 
         task.status === 'assigned' || task.status === 'in_progress'
       )
-      const completedTasksData = sampleTasks.filter(task => 
+      const completedTasksData = (collectionTasks || []).filter(task => 
         task.status === 'completed'
       )
 
@@ -141,12 +91,22 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
       setLoading(false)
     } catch (error) {
       console.error("Error loading tasks:", error)
+      setTasks([])
+      setCompletedTasks([])
       setLoading(false)
     }
   }
 
   const startCollection = async (taskId: string) => {
     try {
+      // Update task status in database
+      const { data, error } = await database.pickupAgents.updateTaskStatus(taskId, 'in_progress')
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to start collection')
+      }
+
+      // Update local state
       setTasks(prev => prev.map(task => 
         task.id === taskId 
           ? { ...task, status: 'in_progress' as const, started_at: new Date().toISOString() }
@@ -162,6 +122,37 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
       toast({
         title: "Error",
         description: "Failed to start collection. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const completeCollection = async (taskId: string) => {
+    try {
+      // Update task status in database
+      const { data, error } = await database.pickupAgents.updateTaskStatus(taskId, 'completed')
+      
+      if (error) {
+        throw new Error(error.message || 'Failed to complete collection')
+      }
+
+      // Move task from active to completed
+      const completedTask = tasks.find(task => task.id === taskId)
+      if (completedTask) {
+        const updatedTask = { ...completedTask, status: 'completed' as const, completed_at: new Date().toISOString() }
+        setTasks(prev => prev.filter(task => task.id !== taskId))
+        setCompletedTasks(prev => [updatedTask, ...prev])
+      }
+
+      toast({
+        title: "Collection Completed!",
+        description: "Great job! The waste has been collected successfully.",
+      })
+    } catch (error) {
+      console.error("Error completing collection:", error)
+      toast({
+        title: "Error",
+        description: "Failed to complete collection. Please try again.",
         variant: "destructive",
       })
     }
@@ -247,12 +238,11 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
 
         {task.status === 'in_progress' && (
           <Button 
-            variant="outline"
-            className="w-full border-blue-200 text-blue-600"
-            disabled
+            onClick={() => completeCollection(task.id)}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
           >
-            <Navigation className="w-4 h-4 mr-2" />
-            In Progress
+            <CheckCircle className="w-4 h-4 mr-2" />
+            Complete Collection
           </Button>
         )}
 
