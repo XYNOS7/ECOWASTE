@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Shield, Search, CheckCircle, Clock, Trash2, Eye, LogOut, Filter, Users, TrendingUp, AlertTriangle, Activity, Coins } from "lucide-react"
+import { Shield, Search, CheckCircle, Clock, Trash2, Eye, LogOut, Filter, Users, TrendingUp, AlertTriangle, Activity, Coins, Camera } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { database } from "@/lib/database"
 import { auth } from "@/lib/auth"
@@ -1087,7 +1087,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Type</TableHead>
+                          <TableHead>Image</TableHead>
                           <TableHead>Title</TableHead>
                           <TableHead>User</TableHead>
                           <TableHead>Status</TableHead>
@@ -1104,9 +1104,22 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                           return (
                             <TableRow key={`${report.type}-${report.id}`}>
                               <TableCell>
-                                <Badge variant={report.type === 'waste' ? 'default' : 'secondary'}>
-                                  {report.type === 'waste' ? 'Waste' : 'Dirty Area'}
-                                </Badge>
+                                <div className="flex items-center gap-2">
+                                  {report.image_url ? (
+                                    <img
+                                      src={report.image_url}
+                                      alt={report.title}
+                                      className="w-12 h-12 rounded-lg object-cover shadow-sm border"
+                                    />
+                                  ) : (
+                                    <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center border">
+                                      <Camera className="w-6 h-6 text-muted-foreground" />
+                                    </div>
+                                  )}
+                                  <Badge variant={report.type === 'waste' ? 'default' : 'secondary'} className="text-xs">
+                                    {report.type === 'waste' ? 'Waste' : 'Dirty Area'}
+                                  </Badge>
+                                </div>
                               </TableCell>
                               <TableCell className="font-medium">
                                 {report.title}
