@@ -1,0 +1,129 @@
+Thanks — this confirms the core issue:
+
+### ❌ Your Supabase session is getting **corrupted or not accessible** after tab switch.
+
+---
+
+## 🔍 What the Logs Reveal
+
+```txt
+Tab visibility changed: visible
+Error refreshing session on tab focus: ReferenceError {}
+Session refresh failed before signout: ReferenceError {}
+```
+
+These logs mean:
+
+* `supabase.auth.getSession()` is throwing a `ReferenceError`, not a typical Supabase error.
+* It likely means the **Supabase client is broken**, undefined, or its state (like `localStorage`) is unavailable or desynced after tab inactivity.
+
+---
+
+## ✅ Fix Plan (Reliable Across Tab Switching)
+
+### ✅ 1. **Fix: Initialize Supabase client inside a stable singleton**
+
+Avoid initializing it in a component or hook repeatedly. Create a clean client instance:
+
+```ts
+// lib/supabaseClient.ts
+import { createBrowserClient } from '@supabase/ssr'; // or use `createClient` if not using SSR
+
+export const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  }
+);
+```
+
+Import from this file everywhere.
+
+---
+
+### ✅ 2. **Wrap your app with SupabaseProvider (if using SSR)**
+
+If using `@supabase/auth-helpers-nextjs`, wrap `_app.tsx` like this:
+
+```tsx
+// pages/_app.tsx
+import { SessionContextProvider } from '@supabase/auth-helpers-react';
+import { supabase } from '@/lib/supabaseClient';
+
+function MyApp({ Component, pageProps }) {
+  return (
+    <SessionContextProvider supabaseClient={supabase} initialSession={pageProps.initialSession}>
+      <Component {...pageProps} />
+    </SessionContextProvider>
+  );
+}
+```
+
+This avoids session desync issues entirely.
+
+---
+
+### ✅ 3. **Ensure correct signOut implementation**
+
+In your `useAuth` or button component, make sure `signOut()` is called directly from the valid `supabase` instance:
+
+```tsx
+const handleSignOut = async () => {
+  console.log("Sign out button clicked");
+
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      console.error("Sign out failed:", error.message);
+    } else {
+      console.log("Sign out successful");
+    }
+  } catch (err) {
+    console.error("Unexpected sign out error:", err);
+  }
+};
+```
+
+---
+
+### ✅ 4. **Ensure you're not running signOut when session is null**
+
+If session is stale, calling `signOut()` too early causes ReferenceErrors. Add a session check:
+
+```tsx
+const { data: session } = await supabase.auth.getSession();
+if (!session.session) {
+  console.warn("No session to sign out from.");
+  return;
+}
+await supabase.auth.signOut();
+```
+
+---
+
+## ⚠️ Watch Out For
+
+* **Reloading the page should restore session** – if not, storage access is broken.
+* If you're using custom storage (like `IndexedDB` or disabling cookies), Supabase may fail on session rehydration across tabs.
+* **ReferenceError {}** often means you're calling a method on an undefined object.
+
+---
+
+## ✅ Final Recommendations
+
+| Area                  | Fix                                                           |
+| --------------------- | ------------------------------------------------------------- |
+| Supabase client setup | Singleton in `lib/supabaseClient.ts`                          |
+| Session persistence   | Ensure `persistSession: true`                                 |
+| Tab restore           | Always call `supabase.auth.getSession()` on visibility change |
+| Sign out logic        | Don’t run if `session == null`                                |
+| Debugging             | Add `console.log(supabase)` before calling anything           |
+
+---
+
+Would you like me to review your actual `supabaseClient.ts` and `useAuth` hook? You can paste them and I’ll clean them up.
