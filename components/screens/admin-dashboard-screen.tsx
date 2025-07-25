@@ -55,12 +55,15 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
   const [reports, setReports] = useState<CombinedReport[]>([])
   const [admins, setAdmins] = useState<any[]>([])
   const [users, setUsers] = useState<User[]>([])
+  const [pickupTasks, setPickupTasks] = useState<any[]>([])
   const [filteredReports, setFilteredReports] = useState<CombinedReport[]>([])
   const [filteredUsers, setFilteredUsers] = useState<User[]>([])
+  const [filteredTasks, setFilteredTasks] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("dashboard")
   const [searchTerm, setSearchTerm] = useState("")
   const [userSearchTerm, setUserSearchTerm] = useState("")
+  const [taskSearchTerm, setTaskSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [typeFilter, setTypeFilter] = useState("all")
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
@@ -78,6 +81,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       loadAdminData()
       fetchReports()
       loadUsers()
+      loadPickupTasks()
       fetchDashboardStats()
       // Load admins separately to ensure it's not interfering with other calls
       loadAdmins()
@@ -94,6 +98,19 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       }
     } catch (error) {
       console.error("Error fetching users:", error)
+    }
+  }
+
+  const loadPickupTasks = async () => {
+    try {
+      const { data, error } = await database.pickupAgents.getAllTasks()
+      if (error) {
+        console.error("Error loading pickup tasks:", error)
+      } else {
+        setPickupTasks(data || [])
+      }
+    } catch (error) {
+      console.error("Error fetching pickup tasks:", error)
     }
   }
 
@@ -242,6 +259,10 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
     filterUsers()
   }, [users, userSearchTerm])
 
+  useEffect(() => {
+    filterTasks()
+  }, [pickupTasks, taskSearchTerm])
+
   const filterUsers = () => {
     let filtered = users
 
@@ -254,6 +275,20 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
     }
 
     setFilteredUsers(filtered)
+  }
+
+  const filterTasks = () => {
+    let filtered = pickupTasks
+
+    if (taskSearchTerm) {
+      filtered = filtered.filter(task => 
+        task.waste_report?.title.toLowerCase().includes(taskSearchTerm.toLowerCase()) ||
+        task.pickup_agent?.full_name.toLowerCase().includes(taskSearchTerm.toLowerCase()) ||
+        task.waste_report?.profiles?.username.toLowerCase().includes(taskSearchTerm.toLowerCase())
+      )
+    }
+
+    setFilteredTasks(filtered)
   }
 
   const fetchReports = async () => {
@@ -611,6 +646,14 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
               Reports
             </Button>
             <Button 
+              variant={activeTab === "pickup-agents" ? "default" : "ghost"} 
+              size="sm" 
+              className={activeTab === "pickup-agents" ? "bg-orange-600 text-white" : "text-gray-600"}
+              onClick={() => setActiveTab("pickup-agents")}
+            >
+              Pickup Agents
+            </Button>
+            <Button 
               variant={activeTab === "settings" ? "default" : "ghost"} 
               size="sm" 
               className={activeTab === "settings" ? "bg-indigo-600 text-white" : "text-gray-600"}
@@ -845,6 +888,149 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                   {filteredUsers.length === 0 && (
                     <div className="text-center py-8 text-gray-500">
                       No users found matching your search.
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+        )}
+
+        {/* Pickup Agents Section */}
+        {activeTab === "pickup-agents" && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Card className="bg-gradient-to-r from-orange-500 to-orange-600 text-white border-0 mb-6">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Truck className="w-6 h-6" />
+                <CardTitle className="text-white text-xl">Pickup Agent Management</CardTitle>
+              </div>
+              <p className="text-orange-100 text-sm">Monitor collection tasks and agent performance</p>
+            </CardHeader>
+            <CardContent>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-orange-200 w-4 h-4" />
+                <Input
+                  placeholder="Search tasks, agents, or reports..."
+                  value={taskSearchTerm}
+                  onChange={(e) => setTaskSearchTerm(e.target.value)}
+                  className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-orange-200"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Truck className="w-5 h-5" />
+                Collection Tasks ({filteredTasks.length})
+              </CardTitle>
+              <CardDescription>
+                All pickup assignments with agent details and completion status
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {loading ? (
+                <div className="flex justify-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Report</TableHead>
+                        <TableHead>Assigned Agent</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Customer</TableHead>
+                        <TableHead>Location</TableHead>
+                        <TableHead>Assigned Date</TableHead>
+                        <TableHead>Collection Photo</TableHead>
+                        <TableHead>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredTasks.map((task) => (
+                        <TableRow key={task.id}>
+                          <TableCell className="font-medium">
+                            {task.waste_report?.title || 'Unknown Report'}
+                          </TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{task.pickup_agent?.full_name || 'Unassigned'}</div>
+                              <div className="text-sm text-gray-500">{task.pickup_agent?.phone_number}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={getStatusBadgeVariant(task.status)} className={getStatusColor(task.status)}>
+                              {task.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {task.waste_report?.profiles?.username || 'Unknown User'}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">
+                              {task.waste_report?.location_address || 'No address'}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            {new Date(task.assigned_at).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
+                            {task.collection_photo_url ? (
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={task.collection_photo_url}
+                                  alt="Collection"
+                                  className="w-12 h-12 rounded-lg object-cover cursor-pointer border"
+                                  onClick={() => window.open(task.collection_photo_url, '_blank')}
+                                />
+                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                  <Camera className="w-3 h-3 mr-1" />
+                                  Photo
+                                </Badge>
+                              </div>
+                            ) : (
+                              <Badge variant="outline" className="text-xs bg-gray-50 text-gray-500 border-gray-200">
+                                No Photo
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                if (task.waste_report?.location_lat && task.waste_report?.location_lng) {
+                                  const mapsUrl = `https://www.google.com/maps?q=${task.waste_report.location_lat},${task.waste_report.location_lng}`
+                                  window.open(mapsUrl, '_blank')
+                                } else {
+                                  toast({
+                                    title: "Location Not Available",
+                                    description: "This task doesn't have location data available.",
+                                    variant: "destructive",
+                                  })
+                                }
+                              }}
+                            >
+                              <Eye className="w-4 h-4 mr-1" />
+                              View
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {filteredTasks.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                      No pickup tasks found matching your search.
                     </div>
                   )}
                 </div>

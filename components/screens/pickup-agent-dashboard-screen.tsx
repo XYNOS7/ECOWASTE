@@ -21,7 +21,9 @@ import {
   Home,
   History,
   HelpCircle,
-  Play
+  Play,
+  Camera,
+  Upload
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { database } from "@/lib/database"
@@ -59,6 +61,7 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
   const [completedTasks, setCompletedTasks] = useState<CollectionTask[]>([])
   const [loading, setLoading] = useState(true)
   const [activeView, setActiveView] = useState("home")
+  const [uploadingPhoto, setUploadingPhoto] = useState<string | null>(null)
   const { toast } = useToast()
 
   useEffect(() => {
@@ -146,6 +149,67 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
         description: "Failed to start collection. Please try again.",
         variant: "destructive",
       })
+    }
+  }
+
+  const handleUploadPhoto = async (taskId: string) => {
+    try {
+      setUploadingPhoto(taskId)
+      
+      // Create file input element
+      const input = document.createElement('input')
+      input.type = 'file'
+      input.accept = 'image/*'
+      input.capture = 'environment' // Use back camera on mobile
+      
+      const filePromise = new Promise<File | null>((resolve) => {
+        input.onchange = (e) => {
+          const target = e.target as HTMLInputElement
+          const file = target.files?.[0] || null
+          resolve(file)
+        }
+        input.oncancel = () => resolve(null)
+      })
+      
+      input.click()
+      const file = await filePromise
+      
+      if (!file) {
+        setUploadingPhoto(null)
+        return
+      }
+
+      // Upload photo to storage
+      const { url, error: uploadError } = await database.storage.uploadImage(file, agent.id, "collection-photos")
+      
+      if (uploadError || !url) {
+        throw new Error(uploadError?.message || 'Failed to upload photo')
+      }
+
+      // Update collection task with photo URL
+      const { error: updateError } = await database.pickupAgents.updateTaskPhoto(taskId, url)
+      
+      if (updateError) {
+        throw new Error(updateError.message || 'Failed to save photo reference')
+      }
+
+      toast({
+        title: "Photo Uploaded!",
+        description: "Collection photo has been uploaded successfully.",
+      })
+      
+      // Refresh tasks to get updated data
+      await loadTasks()
+      
+    } catch (error) {
+      console.error("Error uploading photo:", error)
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload collection photo. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setUploadingPhoto(null)
     }
   }
 
@@ -254,13 +318,27 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
         )}
 
         {task.status === 'in_progress' && (
-          <Button 
-            onClick={() => completeCollection(task.id)}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            <CheckCircle className="w-4 h-4 mr-2" />
-            Complete Collection
-          </Button>
+          <div className="space-y-3">
+            <Button 
+              onClick={() => handleUploadPhoto(task.id)}
+              disabled={uploadingPhoto === task.id}
+              className="w-full bg-orange-600 hover:bg-orange-700 text-white disabled:opacity-50"
+            >
+              {uploadingPhoto === task.id ? (
+                <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <Camera className="w-4 h-4 mr-2" />
+              )}
+              {uploadingPhoto === task.id ? 'Uploading...' : 'Upload Collection Photo'}
+            </Button>
+            <Button 
+              onClick={() => completeCollection(task.id)}
+              className="w-full bg-green-600 hover:bg-green-700 text-white"
+            >
+              <CheckCircle className="w-4 h-4 mr-2" />
+              Mark as Completed
+            </Button>
+          </div>
         )}
 
         {task.status === 'completed' && (

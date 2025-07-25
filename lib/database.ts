@@ -160,6 +160,58 @@ export const database = {
         return { data: null, error: err }
       }
     },
+
+    async updateTaskPhoto(taskId: string, photoUrl: string) {
+      try {
+        const { data, error } = await supabase
+          .from("collection_tasks")
+          .update({ 
+            collection_photo_url: photoUrl,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", taskId)
+          .select()
+
+        return { data, error }
+      } catch (err) {
+        console.error("Database pickup agent updateTaskPhoto error:", err)
+        return { data: null, error: err }
+      }
+    },
+
+    async getAllTasks() {
+      try {
+        const { data, error } = await supabase
+          .from("collection_tasks")
+          .select(`
+            *,
+            pickup_agent:pickup_agents(
+              id,
+              full_name,
+              phone_number
+            ),
+            waste_report:waste_reports(
+              id,
+              title,
+              description,
+              category,
+              location_address,
+              location_lat,
+              location_lng,
+              user_id,
+              status,
+              profiles:user_id(username)
+            )
+          `)
+          .order("assigned_at", { ascending: false })
+
+        console.log("Fetched all collection tasks:", data?.length || 0)
+        return { data, error }
+      } catch (err) {
+        console.error("Database pickup agent getAllTasks error:", err)
+        return { data: [], error: err }
+      }
+    },
   },
 
   // Admin operations
