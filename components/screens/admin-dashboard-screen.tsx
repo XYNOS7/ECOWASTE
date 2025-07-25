@@ -1117,9 +1117,6 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                                       <Camera className="w-6 h-6 text-muted-foreground" />
                                     </div>
                                   )}
-                                  <Badge variant={report.type === 'waste' ? 'default' : 'secondary'} className="text-xs">
-                                    {report.type === 'waste' ? 'Waste' : 'Dirty Area'}
-                                  </Badge>
                                 </div>
                               </TableCell>
                               <TableCell className="font-medium">
