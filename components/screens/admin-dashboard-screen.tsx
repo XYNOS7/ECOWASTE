@@ -287,9 +287,9 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
 
     if (userSearchTerm) {
       filtered = filtered.filter(user => 
-        user.full_name.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-        user.username.toLowerCase().includes(userSearchTerm.toLowerCase()) ||
-        user.email.toLowerCase().includes(userSearchTerm.toLowerCase())
+        (user.full_name || '').toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        (user.username || '').toLowerCase().includes(userSearchTerm.toLowerCase()) ||
+        (user.email || '').toLowerCase().includes(userSearchTerm.toLowerCase())
       )
     }
 
@@ -301,9 +301,9 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
 
     if (taskSearchTerm) {
       filtered = filtered.filter(task => 
-        task.waste_report?.title.toLowerCase().includes(taskSearchTerm.toLowerCase()) ||
-        task.pickup_agent?.full_name.toLowerCase().includes(taskSearchTerm.toLowerCase()) ||
-        task.waste_report?.profiles?.username.toLowerCase().includes(taskSearchTerm.toLowerCase())
+        (task.waste_report?.title || '').toLowerCase().includes(taskSearchTerm.toLowerCase()) ||
+        (task.pickup_agent?.full_name || '').toLowerCase().includes(taskSearchTerm.toLowerCase()) ||
+        (task.waste_report?.profiles?.username || '').toLowerCase().includes(taskSearchTerm.toLowerCase())
       )
     }
 
@@ -340,9 +340,9 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
 
     if (searchTerm) {
       filtered = filtered.filter(report => 
-        report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        report.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        report.profiles?.username.toLowerCase().includes(searchTerm.toLowerCase())
+        (report.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (report.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (report.profiles?.username || '').toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
