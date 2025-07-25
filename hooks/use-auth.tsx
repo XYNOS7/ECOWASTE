@@ -130,19 +130,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const handleVisibilityChange = async () => {
       console.log("Tab visibility changed:", document.visibilityState)
       if (document.visibilityState === "visible") {
-        // Recheck Supabase session when tab becomes visible
-        const { session, error } = await auth.getCurrentSession()
-        console.log("Session on tab focus:", session ? "Active" : "None", error ? error.message : "")
-        
-        if (session?.user && !user) {
-          // Session exists but user state is null, restore it
-          setUser(session.user)
-          const profileData = await createProfileIfNeeded(session.user)
-          setProfile(profileData)
-        } else if (!session?.user && user) {
-          // Session lost but user state exists, clear it
-          setUser(null)
-          setProfile(null)
+        try {
+          // Force refresh session when tab becomes visible
+          await supabase.auth.refreshSession()
+          
+          // Recheck Supabase session when tab becomes visible
+          const { session, error } = await auth.getCurrentSession()
+          console.log("Session on tab focus:", session ? "Active" : "None", error ? error.message : "")
+          
+          if (session?.user && !user) {
+            // Session exists but user state is null, restore it
+            console.log("Restoring user session from tab focus")
+            setUser(session.user)
+            const profileData = await createProfileIfNeeded(session.user)
+            setProfile(profileData)
+          } else if (!session?.user && user) {
+            // Session lost but user state exists, clear it
+            console.log("Clearing stale user state from tab focus")
+            setUser(null)
+            setProfile(null)
+          }
+        } catch (error) {
+          console.error("Error refreshing session on tab focus:", error)
         }
       }
     }
@@ -197,6 +206,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true)
     try {
       console.log("SignOut called from useAuth hook")
+      
+      // First refresh session to ensure we have the latest state
+      try {
+        await supabase.auth.refreshSession()
+      } catch (refreshError) {
+        console.warn("Session refresh failed before signout:", refreshError)
+      }
+      
       const { error } = await auth.signOut()
       
       if (error) {
@@ -204,20 +221,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Still proceed with local cleanup even if server signout fails
       }
 
+      console.log("Forcing local state cleanup")
+      
       // Always clear local state regardless of server response
       setUser(null)
       setProfile(null)
       
       // Clear any cached data
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('supabase.auth.token')
-        sessionStorage.clear()
-        // Clear all supabase related items
+        // Clear all auth-related storage more aggressively
         Object.keys(localStorage).forEach(key => {
-          if (key.startsWith('supabase')) {
+          if (key.startsWith('supabase') || key.includes('auth') || key.includes('session')) {
             localStorage.removeItem(key)
           }
         })
+        
+        // Clear session storage completely
+        sessionStorage.clear()
+        
+        // Force reload to clear any remaining state
+        setTimeout(() => {
+          window.location.reload()
+        }, 100)
       }
 
       return { error: null }
@@ -229,17 +254,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfile(null)
       
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('supabase.auth.token')
-        sessionStorage.clear()
-        // Clear all supabase related items
         Object.keys(localStorage).forEach(key => {
-          if (key.startsWith('supabase')) {
+          if (key.startsWith('supabase') || key.includes('auth') || key.includes('session')) {
             localStorage.removeItem(key)
           }
         })
+        sessionStorage.clear()
+        
+        // Force reload on error too
+        setTimeout(() => {
+          window.location.reload()
+        }, 100)
       }
       
-      return { error }
+      return { error: null } // Always return success to ensure UI state reset
     } finally {
       setLoading(false)
     }

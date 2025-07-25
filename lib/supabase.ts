@@ -20,8 +20,8 @@ if (supabaseUrl === "https://example.supabase.co" || supabaseAnonKey === "public
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    autoRefreshToken: true,
     persistSession: true,
+    autoRefreshToken: true,
     detectSessionInUrl: true,
     flowType: 'pkce'
   },

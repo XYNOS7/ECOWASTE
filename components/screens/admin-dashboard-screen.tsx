@@ -551,7 +551,17 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
   const handleSignOut = async () => {
     console.log("Admin sign out button clicked")
     try {
+      // First refresh session to ensure we have current state
+      try {
+        console.log("Refreshing admin session before signout")
+        await supabase.auth.refreshSession()
+      } catch (refreshError) {
+        console.warn("Admin session refresh failed:", refreshError)
+      }
+
+      console.log("Attempting admin signout")
       const { error } = await auth.signOut()
+      
       if (error) {
         console.error("Admin sign out error:", error)
         toast({
@@ -564,7 +574,13 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       }
     } catch (error) {
       console.error("Admin sign out exception:", error)
+      toast({
+        title: "Sign Out Error",
+        description: "Sign out failed, but you will be logged out locally.",
+        variant: "destructive",
+      })
     } finally {
+      console.log("Calling onSignOut for admin cleanup")
       // Always call onSignOut to handle local state cleanup
       onSignOut()
     }

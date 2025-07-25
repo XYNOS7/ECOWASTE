@@ -49,30 +49,58 @@ export const auth = {
     try {
       console.log("Sign out button clicked")
       
-      // First try to get current session to ensure we're authenticated
-      const { data: sessionData } = await supabase.auth.getSession()
+      // First refresh session to ensure we're working with the latest state
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
       console.log("Current session before signout:", sessionData?.session ? "Active" : "None")
       
+      if (sessionError) {
+        console.error("Session error before signout:", sessionError)
+      }
+      
+      // Try to sign out from Supabase
       const { error } = await supabase.auth.signOut({
-        scope: 'local' // Force local signout to clear session
+        scope: 'global' // Sign out from all sessions
       })
       
       if (error) {
         console.error("Supabase signout error:", error)
+        // Don't return early - still proceed with local cleanup
       } else {
         console.log("Sign out successful")
       }
       
-      // Force clear local storage and session storage
+      // Force clear all auth-related storage
       if (typeof window !== 'undefined') {
+        // Clear all supabase related items
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('supabase') || key.includes('auth')) {
+            localStorage.removeItem(key)
+          }
+        })
+        
+        // Clear session storage
+        sessionStorage.clear()
+        
+        // Also clear any remaining tokens
         localStorage.removeItem('supabase.auth.token')
+        localStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
+      }
+      
+      return { error: null } // Always return success for local cleanup
+    } catch (err) {
+      console.error("Auth signout error:", err)
+      
+      // Force local cleanup even on error
+      if (typeof window !== 'undefined') {
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('supabase') || key.includes('auth')) {
+            localStorage.removeItem(key)
+          }
+        })
         sessionStorage.clear()
       }
       
-      return { error }
-    } catch (err) {
-      console.error("Auth signout error:", err)
-      return { error: err }
+      return { error: null } // Return success to force state reset
     }
   },
 
