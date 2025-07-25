@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import { Shield, Search, CheckCircle, Clock, Trash2, Eye, LogOut, Filter, Users, TrendingUp, AlertTriangle, Activity, Coins, Camera } from "lucide-react"
+import { Shield, Search, CheckCircle, Clock, Trash2, Eye, LogOut, Filter, Users, TrendingUp, AlertTriangle, Activity, Coins, Camera, MapPin } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { database } from "@/lib/database"
 import { auth } from "@/lib/auth"
@@ -1092,6 +1092,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                           <TableHead>User</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Category</TableHead>
+                          <TableHead>Location</TableHead>
                           <TableHead>Date</TableHead>
                           <TableHead>Actions</TableHead>
                         </TableRow>
@@ -1136,6 +1137,22 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                                 {'category' in report ? report.category : 'N/A'}
                               </TableCell>
                               <TableCell>
+                                <div className="flex items-center gap-1">
+                                  {(report.location_lat && report.location_lng) || report.location_address ? (
+                                    <>
+                                      <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                        <MapPin className="w-3 h-3 mr-1" />
+                                        Available
+                                      </Badge>
+                                    </>
+                                  ) : (
+                                    <Badge variant="outline" className="text-xs bg-gray-50 text-gray-500 border-gray-200">
+                                      No Location
+                                    </Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
                                 {new Date(report.created_at).toLocaleDateString()}
                               </TableCell>
                               <TableCell>
@@ -1165,11 +1182,25 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                             size="sm"
                             className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200"
                             onClick={() => {
-                              // Scroll to top of reports section
-                              window.scrollTo({ top: 0, behavior: 'smooth' })
-                              // You could also implement a modal or detailed view here
+                              if (report.location_lat && report.location_lng) {
+                                // Open Google Maps with the specific coordinates
+                                const mapsUrl = `https://www.google.com/maps?q=${report.location_lat},${report.location_lng}`
+                                window.open(mapsUrl, '_blank')
+                              } else if (report.location_address) {
+                                // Fallback to address search if coordinates are not available
+                                const mapsUrl = `https://www.google.com/maps/search/${encodeURIComponent(report.location_address)}`
+                                window.open(mapsUrl, '_blank')
+                              } else {
+                                // Show toast notification if no location data is available
+                                toast({
+                                  title: "Location Not Available",
+                                  description: "This report doesn't have location data available.",
+                                  variant: "destructive",
+                                })
+                              }
                             }}
                           >
+                            <Eye className="w-4 h-4 mr-1" />
                             View Report
                           </Button>
                                 </div>
