@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS collection_tasks (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   pickup_agent_id UUID REFERENCES pickup_agents(id) ON DELETE CASCADE,
   waste_report_id UUID REFERENCES waste_reports(id) ON DELETE CASCADE,
-  status TEXT DEFAULT 'assigned' CHECK (status IN ('assigned', 'in_progress', 'completed', 'cancelled')),
+  status TEXT DEFAULT 'unassigned' CHECK (status IN ('unassigned', 'assigned', 'in_progress', 'completed', 'cancelled')),
   assigned_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   started_at TIMESTAMP WITH TIME ZONE,
   completed_at TIMESTAMP WITH TIME ZONE,

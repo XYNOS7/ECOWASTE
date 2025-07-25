@@ -864,7 +864,7 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                           <TableCell className="font-medium">{userItem.username}</TableCell>
                           <TableCell className="font-mono text-sm">{userItem.email}</TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-1">
+                            <divclassName="flex items-center gap-1">
                               <Coins className="w-4 h-4 text-yellow-500" />
                               {userItem.eco_coins}
                             </div>
@@ -961,12 +961,14 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                           <TableCell className="font-medium">
                             {task.waste_report?.title || 'Unknown Report'}
                           </TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="font-medium">{task.pickup_agent?.full_name || 'Unassigned'}</div>
-                              <div className="text-sm text-gray-500">{task.pickup_agent?.phone_number}</div>
-                            </div>
-                          </TableCell>
+                          <TableCell className="text-sm">
+                        {task.status === 'unassigned' 
+                          ? 'Not Assigned' 
+                          : task.status === 'assigned' 
+                            ? 'Assigned (Pending Start)' 
+                            : task.pickup_agent?.full_name || 'Unknown Agent'
+                        }
+                      </TableCell>
                           <TableCell>
                             <Badge variant={getStatusBadgeVariant(task.status)} className={getStatusColor(task.status)}>
                               {task.status}
@@ -1418,4 +1420,24 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       </div>
     </div>
   )
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>
+      case 'unassigned':
+        return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">Unassigned</Badge>
+      case 'assigned':
+        return <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Assigned</Badge>
+      case 'in-progress':
+        return <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">In Progress</Badge>
+      case 'collected':
+      case 'completed':
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Completed</Badge>
+      case 'rejected':
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Rejected</Badge>
+      default:
+        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Unknown</Badge>
+    }
+  }
 }

@@ -111,16 +111,28 @@ export const database = {
         // Get available pickup agents (simple round-robin assignment for now)
         const { data: agents, error: agentsError } = await supabase
           .from("pickup_agents")
-          .select("id")
+          .select("id, full_name")
           .eq("is_active", true)
           .limit(1)
 
         if (agentsError || !agents || agents.length === 0) {
           console.log("No available pickup agents found")
-          return { data: null, error: { message: "No available pickup agents" } }
+          // Create task without agent assignment - will be picked up by available agents
+          const { data, error } = await supabase
+            .from("collection_tasks")
+            .insert({
+              pickup_agent_id: null,
+              waste_report_id: wasteReportId,
+              status: 'unassigned',
+              assigned_at: new Date().toISOString()
+            })
+            .select()
+            .single()
+          
+          return { data, error }
         }
 
-        // Create collection task
+        // Create collection task with agent assignment
         const { data, error } = await supabase
           .from("collection_tasks")
           .insert({
@@ -132,6 +144,7 @@ export const database = {
           .select()
           .single()
 
+        console.log("Collection task created and assigned to agent:", agents[0].full_name)
         return { data, error }
       } catch (err) {
         console.error("Database createCollectionTask error:", err)
