@@ -64,16 +64,11 @@ export const database = {
             )
           `)
           .or(`pickup_agent_id.eq.${agentId},pickup_agent_id.is.null`)
-          .in("status", ["unassigned", "assigned", "in_progress"])
+          .in("status", ["unassigned", "assigned", "in_progress", "completed"])
           .order("assigned_at", { ascending: false })
 
-        // Filter out tasks where waste report is completed or not in-progress
-        const filteredData = data?.filter(task => 
-          task.waste_report && task.waste_report.status === 'in-progress'
-        ) || []
-
-        console.log("Fetched collection tasks for agent:", agentId, "Tasks:", filteredData.length)
-        return { data: filteredData, error }
+        console.log("Fetched all collection tasks for agent:", agentId, "Tasks:", data?.length || 0)
+        return { data: data || [], error }
       } catch (err) {
         console.error("Database pickup agent getTasks error:", err)
         return { data: [], error: err }

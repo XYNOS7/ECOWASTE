@@ -149,12 +149,12 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
         return (isUnassignedTask || isAssignedToThisAgent || isInProgressByThisAgent) && hasActiveWasteReport
       })
 
-      // Get completed tasks (either collection task is completed OR waste report is completed)
+      // Get completed tasks specifically for this agent
       const completedTasksData = (collectionTasks || []).filter(task => {
-        const isTaskCompleted = task.status === 'completed'
-        const isWasteReportCompleted = task.waste_report && task.waste_report.status === 'completed'
+        const isTaskCompletedByThisAgent = task.status === 'completed' && task.pickup_agent_id === agent.id
+        const isWasteReportCompletedByThisAgent = task.waste_report && task.waste_report.status === 'completed' && task.pickup_agent_id === agent.id
         
-        return isTaskCompleted || isWasteReportCompleted
+        return isTaskCompletedByThisAgent || isWasteReportCompletedByThisAgent
       })
 
       console.log("Active tasks:", activeTasks.length, "Completed tasks:", completedTasksData.length)
@@ -521,7 +521,7 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
         <Card>
           <CardContent className="p-4 text-center">
             <CheckCircle className="w-8 h-8 text-green-500 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-gray-900">{agent.total_collections || 0}</p>
+            <p className="text-2xl font-bold text-gray-900">{completedTasks.length}</p>
             <p className="text-sm text-gray-500">Collections</p>
           </CardContent>
         </Card>
