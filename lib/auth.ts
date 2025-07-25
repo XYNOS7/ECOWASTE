@@ -83,7 +83,13 @@ export const auth = {
         
         // Also clear any remaining tokens
         localStorage.removeItem('supabase.auth.token')
-        localStorage.removeItem('sb-' + supabaseUrl.split('//')[1].split('.')[0] + '-auth-token')
+        
+        // Clear any Supabase auth tokens that might exist
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith('sb-') && key.includes('-auth-token')) {
+            localStorage.removeItem(key)
+          }
+        })
       }
       
       return { error: null } // Always return success for local cleanup

@@ -131,9 +131,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Tab visibility changed:", document.visibilityState)
       if (document.visibilityState === "visible") {
         try {
-          // Force refresh session when tab becomes visible
-          await supabase.auth.refreshSession()
-          
           // Recheck Supabase session when tab becomes visible
           const { session, error } = await auth.getCurrentSession()
           console.log("Session on tab focus:", session ? "Active" : "None", error ? error.message : "")
@@ -206,13 +203,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true)
     try {
       console.log("SignOut called from useAuth hook")
-      
-      // First refresh session to ensure we have the latest state
-      try {
-        await supabase.auth.refreshSession()
-      } catch (refreshError) {
-        console.warn("Session refresh failed before signout:", refreshError)
-      }
       
       const { error } = await auth.signOut()
       
