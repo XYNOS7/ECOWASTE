@@ -168,6 +168,7 @@ function EcoTrackAppContent() {
   }
 
   const handlePickupAgentLogin = (agent: any) => {
+    console.log("Pickup agent logged in:", agent)
     setPickupAgent(agent)
     setCurrentScreen("pickup-agent-dashboard")
   }
@@ -243,6 +244,7 @@ function EcoTrackAppContent() {
 
   // Show pickup agent dashboard if logged in as pickup agent
   if (pickupAgent && currentScreen === "pickup-agent-dashboard") {
+    console.log("Rendering pickup agent dashboard for:", pickupAgent)
     return (
       <PickupAgentDashboardScreen 
         agent={pickupAgent}

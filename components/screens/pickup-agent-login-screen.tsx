@@ -99,14 +99,21 @@ export function PickupAgentLoginScreen({ onPickupAgentLogin, onBackToUser }: Pic
 
         toast({
           title: "Account Created Successfully!",
-          description: "You can now sign in with your credentials.",
+          description: `Welcome aboard, ${agentData.full_name}!`,
         })
         
-        // Switch to sign-in mode
-        setIsSignUp(false)
-        setPhoneNumber("")
-        setPassword("")
-        setFullName("")
+        // Automatically log in the newly created agent
+        const newAgent = {
+          ...data,
+          full_name: agentData.full_name,
+          phone_number: agentData.phone_number,
+          points_earned: agentData.points_earned,
+          total_collections: agentData.total_collections,
+          is_active: agentData.is_active
+        }
+        
+        console.log("Agent signup successful, calling callback with:", newAgent)
+        onPickupAgentLogin(newAgent)
         
       } else {
         // Pickup agent sign-in
@@ -147,6 +154,7 @@ export function PickupAgentLoginScreen({ onPickupAgentLogin, onBackToUser }: Pic
           description: `Signed in successfully as ${agent.full_name}`,
         })
         
+        console.log("Agent login successful, calling callback with:", agent)
         onPickupAgentLogin(agent)
       }
     } catch (err: any) {
