@@ -63,7 +63,7 @@ export const database = {
               profiles:user_id(username)
             )
           `)
-          .or(`pickup_agent_id.eq.${agentId},and(pickup_agent_id.is.null,status.eq.unassigned)`)
+          .or(`pickup_agent_id.eq.${agentId},pickup_agent_id.is.null`)
           .in("status", ["unassigned", "assigned", "in_progress"])
           .order("assigned_at", { ascending: false })
 
@@ -136,13 +136,22 @@ export const database = {
           .eq("id", taskId)
           .eq("status", "unassigned") // Extra safety check
           .is("pickup_agent_id", null)
-          .select()
+          .select(`
+            *,
+            pickup_agent:pickup_agents(
+              id,
+              full_name,
+              phone_number
+            )
+          `)
 
         if (error || !data || data.length === 0) {
           return { data: null, error: new Error("Failed to assign task - may have been taken by another agent") }
         }
 
-        console.log("Task assigned to agent:", agentId)
+        // Notify all other agents to refresh their task lists (remove this task from their view)
+        console.log("Task assigned to agent:", agentId, "- Real-time update will be triggered")
+        
         return { data: data[0], error: null }
       } catch (err) {
         console.error("Database assignTaskToAgent error:", err)

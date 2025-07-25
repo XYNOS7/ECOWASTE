@@ -225,6 +225,22 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       })
       .subscribe()
 
+    // Add real-time subscription for collection tasks to show agent assignments
+    const collectionTasksSubscription = supabase
+      .channel('collection_tasks_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'collection_tasks' }, (payload) => {
+        console.log("Collection task changed:", payload)
+        
+        // Refresh pickup tasks to show real-time agent assignments
+        loadPickupTasks()
+        
+        // If we're on the pickup agents tab, refresh immediately
+        if (activeTab === "pickup-agents") {
+          loadPickupTasks()
+        }
+      })
+      .subscribe()
+
     // Add real-time subscription for admin table changes
     const adminSubscription = supabase
       .channel('admin_changes')
@@ -234,22 +250,25 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
       })
       .subscribe()
 
-    // Auto-refresh every 30 seconds
+    // Auto-refresh every 15 seconds for pickup tasks when on that tab
     const interval = setInterval(() => {
       fetchDashboardStats()
-      // Only refresh admins if we're on the settings tab to avoid unnecessary calls
-      if (activeTab === "settings") {
+      
+      if (activeTab === "pickup-agents") {
+        loadPickupTasks()
+      } else if (activeTab === "settings") {
         loadAdmins()
       }
-    }, 30000)
+    }, 15000)
 
     return () => {
       wasteReportsSubscription.unsubscribe()
       dirtyAreaSubscription.unsubscribe()
+      collectionTasksSubscription.unsubscribe()
       adminSubscription.unsubscribe()
       clearInterval(interval)
     }
-  }, [])
+  }, [activeTab])
 
   useEffect(() => {
     filterReports()
@@ -963,9 +982,12 @@ export function AdminDashboardScreen({ onSignOut }: AdminDashboardScreenProps) {
                           </TableCell>
                           <TableCell className="text-sm">
                         {task.status === 'unassigned' 
-                          ? <span className="text-gray-500">Available to All Agents</span>
+                          ? <span className="text-orange-600 font-medium">📢 Broadcasted to All Agents</span>
                           : task.pickup_agent?.full_name 
-                            ? <span className="font-medium text-blue-600">{task.pickup_agent.full_name}</span>
+                            ? <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                                <span className="font-medium text-blue-600">{task.pickup_agent.full_name}</span>
+                              </div>
                             : <span className="text-gray-500">No Agent Assigned</span>
                         }
                       </TableCell>

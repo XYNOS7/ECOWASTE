@@ -77,7 +77,15 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
         table: 'collection_tasks'
       }, (payload) => {
         console.log('Collection task changed:', payload)
-        loadTasks() // Refresh tasks when any task changes
+        
+        // If a task was assigned to another agent, immediately refresh to remove it from this agent's view
+        if (payload.eventType === 'UPDATE' && payload.new?.pickup_agent_id && payload.new.pickup_agent_id !== agent.id) {
+          console.log('Task assigned to another agent, refreshing tasks')
+          loadTasks()
+        } else {
+          // For other changes, refresh normally
+          loadTasks()
+        }
       })
       .subscribe()
 
@@ -90,14 +98,21 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
         table: 'waste_reports'
       }, (payload) => {
         console.log('Waste report changed:', payload)
-        loadTasks() // Refresh tasks when waste reports change
+        
+        // If a waste report is set to in-progress, new tasks will be created
+        if (payload.new?.status === 'in-progress' && payload.old?.status !== 'in-progress') {
+          console.log('New waste report set to in-progress, refreshing tasks for new opportunities')
+          setTimeout(() => loadTasks(), 1000) // Slight delay to ensure task creation is complete
+        } else {
+          loadTasks()
+        }
       })
       .subscribe()
 
-    // Set up backup refresh every 30 seconds
+    // Set up more frequent refresh for competitive task assignment
     const interval = setInterval(() => {
       loadTasks()
-    }, 30000)
+    }, 10000) // Every 10 seconds for better real-time experience
 
     return () => {
       taskSubscription.unsubscribe()
@@ -125,11 +140,13 @@ export function PickupAgentDashboardScreen({ agent, onSignOut }: PickupAgentDash
 
       // Filter tasks based on waste report status for real-time updates
       const activeTasks = (collectionTasks || []).filter(task => {
-        // Only show tasks that are assigned or in progress AND have waste reports that are in-progress
-        const isActiveStatus = task.status === 'assigned' || task.status === 'in_progress'
+        // Show unassigned tasks (available to all), assigned tasks to this agent, or in progress tasks for this agent
+        const isUnassignedTask = task.status === 'unassigned' && !task.pickup_agent_id
+        const isAssignedToThisAgent = task.status === 'assigned' && task.pickup_agent_id === agent.id
+        const isInProgressByThisAgent = task.status === 'in_progress' && task.pickup_agent_id === agent.id
         const hasActiveWasteReport = task.waste_report && task.waste_report.status === 'in-progress'
         
-        return isActiveStatus && hasActiveWasteReport
+        return (isUnassignedTask || isAssignedToThisAgent || isInProgressByThisAgent) && hasActiveWasteReport
       })
 
       // Get completed tasks (either collection task is completed OR waste report is completed)
