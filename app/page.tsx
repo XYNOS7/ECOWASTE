@@ -60,6 +60,11 @@ function EcoTrackAppContent() {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange)
   }, [user, pickupAgent])
 
+    if (loading) {
+    return <LoadingFallback />
+  }
+
+
   const screenVariants = {
     initial: { opacity: 0, x: 20 },
     animate: { opacity: 1, x: 0 },
