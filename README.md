@@ -63,11 +63,6 @@ eco-track/
 4. **Eco Coins Awarded** – For valid contributions.
 5. **Leaderboard Update** – Ranks eco-warriors based on contributions.
 
----
-
-## 📸 Screenshots
-
-*(Add screenshots here for visual impact – map view, leaderboard, mobile view, report submission page.)*
 
 ---
 
@@ -121,14 +116,6 @@ We welcome contributions!
 * Commit your changes
 * Open a PR
 
----
-
-## 👥 Team
-
-* **Srijan Sinha** – Full Stack Developer, Project Lead
-* **Suranjan Sengupta** – Frontend & UI/UX
-* **Disha Ghosh** – Operations & Testing
-* **Koyena Chakraborty** – Content & Branding
 
 ---
 
