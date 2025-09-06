@@ -130,7 +130,3 @@ Licensed under the **MIT License** – free to use and adapt.
 📧 Email: [aec.ece.srijansinha.2026.096@gmail.com](mailto:aec.ece.srijansinha.2026.096@gmail.com)
 
 🌐 Website: [eco-waste.vercel.app](https://ecowaste-mva4.vercel.app/)
-
----
-
-If you want, I can also **add a stylish GitHub banner with your logo + tagline** so the README has a professional first impression when opened. That could make it stand out even more.
